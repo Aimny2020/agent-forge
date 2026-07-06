@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use application::health_service::HealthService;
 use commands::health::{health_check, AppState};
+use commands::skills::*;
 use infrastructure::database::SqliteDatabase;
 use infrastructure::system::PlatformSystem;
 use tauri::Manager;
@@ -24,12 +25,26 @@ pub fn run() {
 
             let database = Arc::new(SqliteDatabase::open(&app_data_dir.join("agentforge.db"))?);
             let system = Arc::new(PlatformSystem::current());
+            let skills = application::skill_service::SkillService::new(Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>);
+            let repo = Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>;
             app.manage(AppState {
                 health: HealthService::new(database, system),
+                skills,
+                repo,
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health_check])
+        .invoke_handler(tauri::generate_handler![
+            health_check,
+            get_skills,
+            import_skill,
+            delete_skill,
+            update_skill_meta,
+            get_categories,
+            create_category,
+            rename_category,
+            delete_category
+        ])
         .run(tauri::generate_context!())
         .expect("failed to run AgentForge");
 }

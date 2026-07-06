@@ -21,6 +21,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "thiserror 2.0.18",
+ "uuid",
  "yaml-front-matter",
 ]
 
