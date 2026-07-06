@@ -15,6 +15,17 @@ pub trait ProcessManager: Send + Sync {
     fn terminate(&self, id: &TaskRunId) -> DomainResult<()>;
 }
 
+pub trait SkillRepository: Send + Sync {
+    fn get_user_meta(&self, skill_id: &str) -> DomainResult<Option<crate::domain::skill::UserSkillMeta>>;
+    fn save_user_meta(&self, skill_id: &str, category_id: Option<&str>, user_notes: Option<&str>, is_enabled: bool) -> DomainResult<()>;
+    fn delete_user_meta(&self, skill_id: &str) -> DomainResult<()>;
+    
+    fn get_categories(&self) -> DomainResult<Vec<crate::domain::skill::Category>>;
+    fn create_category(&self, id: &str, name: &str, created_at: &str) -> DomainResult<crate::domain::skill::Category>;
+    fn rename_category(&self, id: &str, name: &str) -> DomainResult<()>;
+    fn delete_category(&self, id: &str) -> DomainResult<()>;
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
