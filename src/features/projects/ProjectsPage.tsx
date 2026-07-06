@@ -43,31 +43,27 @@ export function ProjectsPage() {
 
   return (
     <div className="page-stack">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p className="eyebrow">{activeProject ? activeProject.name.toUpperCase() : '未选择项目'}</p>
-          <h1>项目管理</h1>
-          <p className="page-description">统一维护工程规则、Agent 配置与本地环境。</p>
-        </div>
+      <h1 className="sr-only">项目管理</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', gap: 'var(--space-2)' }}>
+        <nav className="tab-navigation" aria-label="项目详情">
+          {tabs.map((tab) => (
+            <NavLink key={tab.to} to={tab.to} end={tab.end}>
+              {tab.label}
+            </NavLink>
+          ))}
+        </nav>
         {activeProject && (
           <button
             type="button"
             className="button button--secondary"
             onClick={handleDeleteActiveProject}
-            style={{ color: '#f44336', borderColor: '#f44336', marginTop: '1rem' }}
+            style={{ color: '#f44336', borderColor: '#f44336' }}
             disabled={deleteProjectMut.isPending}
           >
             {deleteProjectMut.isPending ? '正在删除...' : '删除项目'}
           </button>
         )}
-      </header>
-      <nav className="tab-navigation" aria-label="项目详情">
-        {tabs.map((tab) => (
-          <NavLink key={tab.to} to={tab.to} end={tab.end}>
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
+      </div>
       <Outlet />
 
       {/* 二次确认 React 弹窗 */}
