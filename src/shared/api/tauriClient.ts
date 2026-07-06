@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { CommandFailure, HealthReport } from './types';
+import type { CommandFailure, HealthReport, Skill, Category } from './types';
 
 export class AppError extends Error {
   constructor(
@@ -39,6 +39,75 @@ function normalizeError(error: unknown): AppError {
 export async function getHealth(): Promise<HealthReport> {
   try {
     return await invoke<HealthReport>('health_check');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getSkills(): Promise<Skill[]> {
+  try {
+    return await invoke<Skill[]>('get_skills');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function importSkill(source: string, importType: 'folder' | 'git'): Promise<string> {
+  try {
+    return await invoke<string>('import_skill', { source, importType });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function deleteSkill(skillId: string): Promise<void> {
+  try {
+    await invoke<void>('delete_skill', { skillId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function updateSkillMeta(
+  skillId: string,
+  categoryId: string | null,
+  userNotes: string | null,
+  isEnabled: boolean,
+): Promise<void> {
+  try {
+    await invoke<void>('update_skill_meta', { skillId, categoryId, userNotes, isEnabled });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getCategories(): Promise<Category[]> {
+  try {
+    return await invoke<Category[]>('get_categories');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function createCategory(name: string): Promise<Category> {
+  try {
+    return await invoke<Category>('create_category', { name });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function renameCategory(id: string, name: string): Promise<void> {
+  try {
+    await invoke<void>('rename_category', { id, name });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  try {
+    await invoke<void>('delete_category', { id });
   } catch (error) {
     throw normalizeError(error);
   }

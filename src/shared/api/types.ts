@@ -12,3 +12,25 @@ export interface CommandFailure {
   message: string;
   details?: string;
 }
+
+export interface SkillMetadata {
+  name: string;
+  description: string;
+  author?: string;
+  version?: string;
+}
+
+export interface Skill {
+  id: string;
+  metadata: SkillMetadata;
+  html_content: string;
+  category_id?: string;
+  user_notes?: string;
+  is_enabled: boolean;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+}
