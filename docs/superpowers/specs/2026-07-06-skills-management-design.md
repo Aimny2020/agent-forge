@@ -4,7 +4,8 @@
 
 Skills Management 模块用于管理 AgentForge 的全局可复用“技能库”（Capability Catalog）。技能用于配置、指导或扩展各种 Agent 的行为。本模块将实现：
 - **全局文件存储**：所有技能存放在用户家目录的全局路径 `~/.agent-forge/skills/` 下，每个技能是一个独立的文件夹，内部包含 `SKILL.md`（内嵌 YAML Frontmatter 描述与正文说明）。
-- **用户自定义数据持久化**：使用已有的 SQLite 数据库存储用户自定义的属性（包含技能分类、个人备注、启用/停用状态）。
+- **用户自定义数据持久化**：使用已有的 SQLite 数据库存储用户自定义的属性（包含技能所属分类、个人备注/使用说明）。
+- **项目级启用机制**：技能的“启用/停用”状态属于项目级别，通过独立的 `project_skills` 关系表持久化。用户在项目详情页（Harness）中统一为当前项目启用或禁用技能。
 - **完全自定义的分类**：支持用户显式新建、重命名、删除分类。新导入的技能默认属于“未分类”（Uncategorized）。
 - **双重导入机制**：支持通过**选择本地文件夹**或**输入 Git 仓库链接**将技能导入至全局技能库。
 - **物理删除**：删除技能时，物理删除对应的磁盘文件夹，并级联清理数据库记录。
@@ -59,14 +60,23 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TEXT NOT NULL
 );
 
--- 用户技能配置与备注表
+-- 用户技能配置与备注表（移除了全局 is_enabled）
 CREATE TABLE IF NOT EXISTS skills_user_meta (
   skill_id TEXT PRIMARY KEY NOT NULL,
   category_id TEXT,
   user_notes TEXT,
-  is_enabled INTEGER NOT NULL DEFAULT 1,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+);
+
+-- 项目级技能启用表
+CREATE TABLE IF NOT EXISTS project_skills (
+  project_id TEXT NOT NULL,
+  skill_id TEXT NOT NULL,
+  enabled_at TEXT NOT NULL,
+  PRIMARY KEY (project_id, skill_id),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (skill_id) REFERENCES skills_user_meta(skill_id) ON DELETE CASCADE
 );
 ```
 
@@ -90,8 +100,7 @@ pub struct Skill {
     pub metadata: SkillMetadata,         // YAML 头部数据
     pub html_content: String,            // Markdown 编译后的 HTML 字符串
     pub category_id: Option<String>,     // 关联的用户分类 ID
-    pub user_notes: Option<String>,      // 用户备注
-    pub is_enabled: bool,                // 启用状态
+    pub user_notes: Option<String>,      // 用户备注（作为技能的使用说明）
 }
 
 pub struct Category {
@@ -121,14 +130,25 @@ pub async fn import_skill(
 #[tauri::command]
 pub async fn delete_skill(state: tauri::State<'_, AppState>, skill_id: String) -> Result<(), CommandError>;
 
-// 更新技能用户数据
+// 更新技能用户数据（去掉了 is_enabled）
 #[tauri::command]
 pub async fn update_skill_meta(
     state: tauri::State<'_, AppState>,
     skill_id: String,
     category_id: Option<String>,
     user_notes: Option<String>,
-    is_enabled: bool,
+) -> Result<(), CommandError>;
+
+// 项目级启用接口
+#[tauri::command]
+pub async fn get_project_skills(state: tauri::State<'_, AppState>, project_id: String) -> Result<Vec<String>, CommandError>;
+
+#[tauri::command]
+pub async fn toggle_project_skill(
+    state: tauri::State<'_, AppState>,
+    project_id: String,
+    skill_id: String,
+    enabled: bool,
 ) -> Result<(), CommandError>;
 
 // 分类管理
@@ -158,14 +178,17 @@ pub async fn delete_category(state: tauri::State<'_, AppState>, id: String) -> R
   - 提供 “+ 新建分类” 按钮及弹窗。
 - **`SkillsGrid.tsx`**：主要网格列表，具备搜索框（根据技能名称、描述、Tag 过滤）和“导入”按钮。
 - **`SkillCard.tsx`**：卡片卡体。
-  - 展示简短名称、描述、启用/禁用 Switch 开关、自定义分类标签。
+  - 展示简短名称、描述、以及自定义分类标签。移去了全局启用/禁用开关。
   - 悬停触发上浮偏移与 `var(--color-primary)` 淡绿色外发光。
 - **`SkillDetailModal.tsx`**：3/4 屏模态详情。
   - 采用平滑的 `scale` 缩放动画从点击处或中心放大。
-  - 左侧：Markdown 编译的 HTML 内容滚动区域（只读）。
-  - 右侧：交互设置。可直接修改下拉所属分类、开启/关闭启用开关、文本框编辑“用户备注”（支持自动保存或点击保存）。
+  - 左侧/顶部：Markdown 编译的 HTML 内容滚动区域（只读，展示使用说明）。
+  - 右侧/底部：交互设置。可直接修改下拉所属分类，文本框编辑“个人备注”（支持自动保存或点击保存）。移去了全局启用开关，使个人备注区域高度更大。
 - **`ImportSkillModal.tsx`**：导入弹窗。
   - 提供单选/切换：“本地文件夹导入” (使用 Tauri `dialog` API 选择路径) 或 “Git 链接导入” (输入仓库 URL，Rust 后端执行 `git clone`)。
+- **`HarnessPage.tsx`**：项目工程配置子页面。
+  - 统一显示当前项目的工程规则。
+  - 提供已导入技能的列表（附带 Checkbox 开关），让用户为当前项目启用或禁用特定的全局技能，状态持久化到 SQLite `project_skills` 中。
 
 ---
 
@@ -215,7 +238,7 @@ pub async fn delete_category(state: tauri::State<'_, AppState>, id: String) -> R
   - 测试 SQLite 数据库迁移，并测试新增/删除/更新 SQL 语句。
 - **React 单元测试**：
   - 测试 `SkillsPage` 搜索过滤、分类切换逻辑。
-  - 测试卡片的启用/禁用开关状态切换。
+  - 测试 `HarnessPage` 中勾选技能开启/停用状态同步到数据库的逻辑。
 
 ### 6.2 手动验证
 - 创建包含 `SKILL.md` 的本地文件夹，测试通过 Local Folder 导入，验证是否能成功复制至全局 `~/.agent-forge/skills/` 目录下。
