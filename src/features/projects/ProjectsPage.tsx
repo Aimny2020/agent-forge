@@ -44,7 +44,7 @@ export function ProjectsPage() {
   return (
     <div className="page-stack">
       <h1 className="sr-only">项目管理</h1>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)', gap: 'var(--space-1)' }}>
         <nav className="tab-navigation" aria-label="项目详情">
           {tabs.map((tab) => (
             <NavLink key={tab.to} to={tab.to} end={tab.end}>
