@@ -58,11 +58,6 @@ export function ProjectSkillsPage() {
   return (
     <div className="page-stack">
       <Card>
-        <h2>项目技能配置 (Skills)</h2>
-        <p className="muted-copy">在此项目中选择需要启用的技能。启用后，相应的技能配置将自动拷贝至项目目录中。</p>
-      </Card>
-
-      <Card>
         <h3>选择启用技能</h3>
         {skills.length === 0 ? (
           <p className="muted-copy" style={{ marginTop: '1rem' }}>
