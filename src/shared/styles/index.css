@@ -187,6 +187,11 @@ a {
   padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
+.shell-body--no-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+
 .project-sidebar {
   position: sticky;
   top: 5.5rem;
