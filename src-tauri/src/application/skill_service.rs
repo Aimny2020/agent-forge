@@ -116,8 +116,8 @@ impl SkillService {
         };
         let project_path = Path::new(&project_path_str);
         
-        // 3. Define target .agentforge/skills/<skill_id> folder
-        let dest_dir = project_path.join(".agentforge").join("skills").join(skill_id);
+        // 3. Define target .agent/skills/<skill_id> folder
+        let dest_dir = project_path.join(".agent").join("skills").join(skill_id);
 
         if enabled {
             // Copy from global library (~/.agent-forge/skills/<skill_id>) to project path
