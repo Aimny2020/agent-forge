@@ -55,7 +55,7 @@ pub async fn toggle_project_skill(
     skill_id: String,
     enabled: bool,
 ) -> Result<(), CommandError> {
-    state.repo.save_project_skill(&project_id, &skill_id, enabled).map_err(CommandError::from)
+    state.skills.toggle_project_skill(&project_id, &skill_id, enabled).map_err(CommandError::from)
 }
 
 #[tauri::command]

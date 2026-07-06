@@ -8,6 +8,7 @@ use std::sync::Arc;
 use application::health_service::HealthService;
 use commands::health::{health_check, AppState};
 use commands::skills::*;
+use commands::projects::*;
 use infrastructure::database::SqliteDatabase;
 use infrastructure::system::PlatformSystem;
 use tauri::Manager;
@@ -45,7 +46,10 @@ pub fn run() {
             get_categories,
             create_category,
             rename_category,
-            delete_category
+            delete_category,
+            get_projects,
+            add_project,
+            select_directory
         ])
         .run(tauri::generate_context!())
         .expect("failed to run AgentForge");
