@@ -15,7 +15,6 @@ pub struct Skill {
     pub html_content: String,
     pub category_id: Option<String>,
     pub user_notes: Option<String>,
-    pub is_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,5 +28,4 @@ pub struct Category {
 pub struct UserSkillMeta {
     pub category_id: Option<String>,
     pub user_notes: Option<String>,
-    pub is_enabled: bool,
 }

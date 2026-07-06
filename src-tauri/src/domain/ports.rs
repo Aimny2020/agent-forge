@@ -17,9 +17,12 @@ pub trait ProcessManager: Send + Sync {
 
 pub trait SkillRepository: Send + Sync {
     fn get_user_meta(&self, skill_id: &str) -> DomainResult<Option<crate::domain::skill::UserSkillMeta>>;
-    fn save_user_meta(&self, skill_id: &str, category_id: Option<&str>, user_notes: Option<&str>, is_enabled: bool) -> DomainResult<()>;
+    fn save_user_meta(&self, skill_id: &str, category_id: Option<&str>, user_notes: Option<&str>) -> DomainResult<()>;
     fn delete_user_meta(&self, skill_id: &str) -> DomainResult<()>;
     
+    fn get_project_skills(&self, project_id: &str) -> DomainResult<Vec<String>>;
+    fn save_project_skill(&self, project_id: &str, skill_id: &str, enabled: bool) -> DomainResult<()>;
+
     fn get_categories(&self) -> DomainResult<Vec<crate::domain::skill::Category>>;
     fn create_category(&self, id: &str, name: &str, created_at: &str) -> DomainResult<crate::domain::skill::Category>;
     fn rename_category(&self, id: &str, name: &str) -> DomainResult<()>;
