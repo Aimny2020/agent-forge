@@ -6,23 +6,15 @@ interface Props {
   skill: Skill;
   categoryName: string;
   onOpenDetail: () => void;
-  onToggleEnable: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }
 
-export function SkillCard({ skill, categoryName, onOpenDetail, onToggleEnable, onDelete }: Props) {
+export function SkillCard({ skill, categoryName, onOpenDetail, onDelete }: Props) {
   return (
     <div className="skill-card" onClick={onOpenDetail}>
       <div className="skill-card-header">
         <span className="category-tag">{categoryName}</span>
         <div className="skill-card-controls" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            className="toggle-switch"
-            checked={skill.is_enabled}
-            onChange={() => {}}
-            onClick={onToggleEnable}
-          />
           <button className="delete-btn" onClick={onDelete}>
             <Trash2 size={14} />
           </button>

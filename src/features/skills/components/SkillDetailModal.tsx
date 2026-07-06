@@ -6,16 +6,15 @@ interface Props {
   skill: Skill;
   categories: Category[];
   onClose: () => void;
-  onUpdate: (categoryId: string | null, userNotes: string | null, isEnabled: boolean) => void;
+  onUpdate: (categoryId: string | null, userNotes: string | null) => void;
 }
 
 export function SkillDetailModal({ skill, categories, onClose, onUpdate }: Props) {
   const [notes, setNotes] = useState(skill.user_notes || '');
   const [catId, setCatId] = useState(skill.category_id || '');
-  const [enabled, setEnabled] = useState(skill.is_enabled);
 
   const handleSave = () => {
-    onUpdate(catId || null, notes || null, enabled);
+    onUpdate(catId || null, notes || null);
     onClose();
   };
 
@@ -38,17 +37,6 @@ export function SkillDetailModal({ skill, categories, onClose, onUpdate }: Props
           </div>
           <div className="modal-meta-editor">
             <div className="form-group">
-              <label>技能状态</label>
-              <div className="toggle-container">
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={(e) => setEnabled(e.target.checked)}
-                />
-                <span>{enabled ? '已启用' : '已停用'}</span>
-              </div>
-            </div>
-            <div className="form-group">
               <label>设置分类</label>
               <select value={catId} onChange={(e) => setCatId(e.target.value)}>
                 <option value="">未分类</option>
@@ -60,11 +48,12 @@ export function SkillDetailModal({ skill, categories, onClose, onUpdate }: Props
               </select>
             </div>
             <div className="form-group flex-fill">
-              <label>个人备注</label>
+              <label>技能使用说明与备注</label>
               <textarea
                 placeholder="在此添加该技能的个性化使用备注或说明..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                style={{ minHeight: '18rem' }}
               />
             </div>
             <div className="actions-footer">
