@@ -196,7 +196,7 @@ a {
   position: sticky;
   top: 5.5rem;
   height: calc(100vh - 7rem);
-  overflow: auto;
+  overflow: hidden auto;
   border: 1px solid var(--color-outline);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -273,11 +273,15 @@ a {
   background: var(--color-surface-strong);
 }
 
+.project-item strong {
+  display: block;
+}
+
 .project-item small {
-  overflow: hidden;
+  display: block;
   color: var(--color-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-all;
 }
 
 .workspace-main {
