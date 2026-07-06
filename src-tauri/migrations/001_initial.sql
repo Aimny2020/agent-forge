@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS _migrations (
+  version INTEGER PRIMARY KEY NOT NULL,
+  applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT OR IGNORE INTO _migrations (version) VALUES (1);
+
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  path TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS task_runs (
+  id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);

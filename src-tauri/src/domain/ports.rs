@@ -1,0 +1,87 @@
+use std::path::Path;
+
+use crate::domain::agent::{AgentMetadata, LaunchSpec};
+use crate::domain::error::DomainResult;
+use crate::domain::task::{ProcessStatus, TaskRunId};
+
+pub trait AgentAdapter: Send + Sync {
+    fn metadata(&self) -> DomainResult<AgentMetadata>;
+    fn build_launch(&self, project: &Path) -> DomainResult<LaunchSpec>;
+}
+
+pub trait ProcessManager: Send + Sync {
+    fn spawn(&self, launch: &LaunchSpec) -> DomainResult<TaskRunId>;
+    fn status(&self, id: &TaskRunId) -> DomainResult<ProcessStatus>;
+    fn terminate(&self, id: &TaskRunId) -> DomainResult<()>;
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use crate::domain::agent::{AgentKind, AgentMetadata, LaunchSpec};
+    use crate::domain::error::DomainResult;
+    use crate::domain::task::{ProcessStatus, TaskRunId};
+
+    use super::{AgentAdapter, ProcessManager};
+
+    struct FakeAgent;
+
+    impl AgentAdapter for FakeAgent {
+        fn metadata(&self) -> DomainResult<AgentMetadata> {
+            Ok(AgentMetadata {
+                kind: AgentKind::Custom,
+                display_name: "Fake Agent".into(),
+                installed: true,
+                version: Some("1.0.0".into()),
+            })
+        }
+
+        fn build_launch(&self, project: &Path) -> DomainResult<LaunchSpec> {
+            Ok(LaunchSpec {
+                program: "fake-agent".into(),
+                args: vec!["start".into()],
+                cwd: project.to_path_buf(),
+                env: vec![],
+            })
+        }
+    }
+
+    #[test]
+    fn agent_adapter_describes_and_builds_launch_command() {
+        let adapter = FakeAgent;
+        let metadata = adapter.metadata().unwrap();
+        let launch = adapter.build_launch(Path::new("/tmp/project")).unwrap();
+
+        assert_eq!(metadata.display_name, "Fake Agent");
+        assert_eq!(launch.program, "fake-agent");
+        assert_eq!(launch.cwd, Path::new("/tmp/project"));
+    }
+
+    struct FakeProcessManager;
+
+    impl ProcessManager for FakeProcessManager {
+        fn spawn(&self, _launch: &LaunchSpec) -> DomainResult<TaskRunId> {
+            Ok(TaskRunId::new("run-1"))
+        }
+
+        fn status(&self, _id: &TaskRunId) -> DomainResult<ProcessStatus> {
+            Ok(ProcessStatus::Running)
+        }
+
+        fn terminate(&self, _id: &TaskRunId) -> DomainResult<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn process_manager_owns_the_task_lifecycle_contract() {
+        let manager = FakeProcessManager;
+        let launch = FakeAgent.build_launch(Path::new("/tmp/project")).unwrap();
+        let id = manager.spawn(&launch).unwrap();
+
+        assert_eq!(id.as_str(), "run-1");
+        assert_eq!(manager.status(&id).unwrap(), ProcessStatus::Running);
+        manager.terminate(&id).unwrap();
+    }
+}

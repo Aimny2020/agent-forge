@@ -1,0 +1,181 @@
+<!DOCTYPE html><html class="light" lang="zh-CN" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#c3c6cf",
+                        "on-secondary-fixed-variant": "#43474e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#0b1c30",
+                        "on-surface-variant": "#3b4a3d",
+                        "on-tertiary-fixed": "#191c1d",
+                        "primary-fixed-dim": "#00e475",
+                        "on-primary-container": "#00612e",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#213145",
+                        "primary-container": "#00e676",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#dfe2eb",
+                        "on-secondary-container": "#61646c",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary": "#ffffff",
+                        "primary": "#006d35",
+                        "outline": "#6b7b6c",
+                        "on-primary-fixed": "#00210b",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#181c22",
+                        "tertiary-fixed-dim": "#c5c7c8",
+                        "surface-variant": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#454748",
+                        "primary-fixed": "#62ff96",
+                        "surface-tint": "#006d35",
+                        "outline-variant": "#bacbb9",
+                        "surface-container": "#e5eeff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary": "#5c5f60",
+                        "secondary": "#5b5e66",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#dfe2eb",
+                        "surface": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#005226",
+                        "inverse-primary": "#00e475",
+                        "tertiary-container": "#c7c8c9",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#e1e3e4",
+                        "background": "#f8f9ff",
+                        "surface-container-high": "#dce9ff",
+                        "on-background": "#0b1c30"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "32px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "section-gap": "48px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "headline-xl-mobile": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-xl": ["Hanken Grotesk"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "mono-code": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-xl-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+                    },
+                    "aspectRatio": {
+                        "16/10": "16 / 10"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Ensuring the fixed layout at 16:10 for large screens while maintaining responsiveness */
+        @media (min-width: 1440px) {
+            .canvas-container {
+                width: 1440px;
+                height: 900px;
+                margin: 0 auto;
+                position: relative;
+                overflow-y: auto;
+                background: #f8f9ff;
+            }
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface bg-surface-dim min-h-screen flex items-center justify-center">
+<div class="canvas-container w-full min-h-screen lg:min-h-0 lg:shadow-2xl lg:rounded-lg overflow-x-hidden bg-background">
+<!-- TopNavBar -->
+<nav class="sticky top-0 left-0 w-full z-50 flex items-center justify-between px-container-padding h-16 bg-surface-container-lowest shadow-sm border-b border-outline-variant/10">
+<div class="flex items-center gap-8">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface">AgentForge</span>
+<div class="hidden md:flex items-center gap-2">
+<a class="text-on-surface-variant font-label-md px-4 py-1.5 hover:text-primary transition-colors duration-200" href="#">控制面板</a>
+<a class="bg-primary-container text-on-primary-container rounded-full px-4 py-1.5 font-label-md transition-transform active:scale-95" href="#">项目管理</a>
+<a class="text-on-surface-variant font-label-md px-4 py-1.5 hover:text-primary transition-colors duration-200" href="#">技能管理</a>
+<a class="text-on-surface-variant font-label-md px-4 py-1.5 hover:text-primary transition-colors duration-200" href="#">MCP 管理</a>
+<a class="text-on-surface-variant font-label-md px-4 py-1.5 hover:text-primary transition-colors duration-200" href="#">设置</a>
+</div>
+</div>
+
+</nav>
+<div class="p-container-padding flex gap-gutter">
+<!-- Sidebar -->
+<aside class="hidden lg:block w-72 shrink-0">
+<div class="bg-surface-container-lowest h-[calc(900px-112px)] rounded-lg flex flex-col shadow-sm border border-outline-variant/30 overflow-hidden">
+<div class="p-6 border-b border-outline-variant/20 flex items-center justify-between">
+<span class="font-headline-md text-on-surface">我的项目</span>
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-3">
+<!-- Project Item 1 -->
+<div class="p-4 rounded-lg bg-surface-container-high border border-primary/20 cursor-pointer transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="font-headline-md text-primary">Agent-Forge-Core</span>
+<span class="text-[10px] bg-primary text-on-primary px-2 py-0.5 rounded-full">v2.4</span>
+</div>
+<div class="flex items-center gap-2 opacity-60">
+<span class="material-symbols-outlined text-[14px]">folder_open</span>
+<span class="text-[11px] font-mono-code truncate">/users/dev/core</span>
+</div>
+</div>
+<!-- Project Item 2 -->
+<div class="p-4 rounded-lg hover:bg-surface-container-low cursor-pointer transition-all border border-transparent">
+<div class="flex items-center justify-between mb-1">
+<span class="font-headline-md text-on-surface">MES-System</span>
+</div>
+<div class="flex items-center gap-2 opacity-60">
+<span class="material-symbols-outlined text-[14px]">folder_open</span>
+<span class="text-[11px] font-mono-code truncate">/users/work/mes</span>
+</div>
+</div>
+<!-- Project Item 3 -->
+<div class="p-4 rounded-lg hover:bg-surface-container-low cursor-pointer transition-all border border-transparent">
+<div class="flex items-center justify-between mb-1">
+<span class="font-headline-md text-on-surface">Content-Bot</span>
+</div>
+<div class="flex items-center gap-2 opacity-60">
+<span class="material-symbols-outlined text-[14px]">folder_open</span>
+<span class="text-[11px] font-mono-code truncate">/users/ai/bot</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 min-w-0">
+<!-- Project Header -->
+
+
+</main>
+</div>
+</div>
+
+
+</body></html>
