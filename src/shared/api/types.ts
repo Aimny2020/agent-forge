@@ -33,3 +33,10 @@ export interface Category {
   name: string;
   created_at: string;
 }
+
+export interface Project {
+  id: string;
+  name: string;
+  path: string;
+  created_at: string;
+}

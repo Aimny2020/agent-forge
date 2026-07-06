@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { CommandFailure, HealthReport, Skill, Category } from './types';
+import type { CommandFailure, HealthReport, Skill, Category, Project } from './types';
 
 export class AppError extends Error {
   constructor(
@@ -127,6 +127,30 @@ export async function renameCategory(id: string, name: string): Promise<void> {
 export async function deleteCategory(id: string): Promise<void> {
   try {
     await invoke<void>('delete_category', { id });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getProjects(): Promise<Project[]> {
+  try {
+    return await invoke<Project[]>('get_projects');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function addProject(path: string): Promise<Project> {
+  try {
+    return await invoke<Project>('add_project', { path });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function selectDirectory(): Promise<string | null> {
+  try {
+    return await invoke<string | null>('select_directory');
   } catch (error) {
     throw normalizeError(error);
   }
