@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2 } from 'lucide-react';
-import { getProjects, addProject, selectDirectory, deleteProject } from '../../shared/api/tauriClient';
+import { getProjects, addProject, selectDirectory } from '../../shared/api/tauriClient';
 import { useProjectStore } from '../../shared/store/projectStore';
 
 export function ProjectSidebar() {
@@ -41,14 +40,6 @@ export function ProjectSidebar() {
     },
   });
 
-  // Mutation to delete project
-  const deleteProjectMut = useMutation({
-    mutationFn: (id: string) => deleteProject(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-    },
-  });
-
   const handleAddProject = async () => {
     try {
       const selectedPath = await selectDirectory();
@@ -57,13 +48,6 @@ export function ProjectSidebar() {
       }
     } catch (err) {
       console.error('Failed to select or add project', err);
-    }
-  };
-
-  const handleDeleteProject = (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    if (confirm(`确定要在当前系统中删除项目 "${name}" 吗？此操作不会物理删除该项目对应的文件夹。`)) {
-      deleteProjectMut.mutate(id);
     }
   };
 
@@ -86,18 +70,10 @@ export function ProjectSidebar() {
               onClick={() => setActiveProjectId(project.id)}
               style={{ cursor: 'pointer' }}
             >
-              <div style={{ paddingRight: '2rem' }}>
+              <div>
                 <strong>{project.name}</strong>
                 <small>{project.path}</small>
               </div>
-              <button
-                type="button"
-                className="delete-project-btn"
-                onClick={(e) => handleDeleteProject(e, project.id, project.name)}
-                title="从系统中删除项目"
-              >
-                <Trash2 size={14} />
-              </button>
             </li>
           );
         })}
