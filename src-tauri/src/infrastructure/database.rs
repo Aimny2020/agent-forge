@@ -81,18 +81,16 @@ impl SkillRepository for SqliteDatabase {
             .lock()
             .map_err(|error| DomainError::Database(error.to_string()))?;
         let mut stmt = connection
-            .prepare("SELECT category_id, user_notes, is_enabled FROM skills_user_meta WHERE skill_id = ?1")
+            .prepare("SELECT category_id, user_notes FROM skills_user_meta WHERE skill_id = ?1")
             .map_err(database_error)?;
         
         let row = stmt
             .query_row([skill_id], |r| {
                 let category_id: Option<String> = r.get(0)?;
                 let user_notes: Option<String> = r.get(1)?;
-                let is_enabled_int: i32 = r.get(2)?;
                 Ok(UserSkillMeta {
                     category_id,
                     user_notes,
-                    is_enabled: is_enabled_int != 0,
                 })
             })
             .optional()
@@ -101,25 +99,70 @@ impl SkillRepository for SqliteDatabase {
         Ok(row)
     }
 
-    fn save_user_meta(&self, skill_id: &str, category_id: Option<&str>, user_notes: Option<&str>, is_enabled: bool) -> DomainResult<()> {
+    fn save_user_meta(&self, skill_id: &str, category_id: Option<&str>, user_notes: Option<&str>) -> DomainResult<()> {
         let connection = self
             .connection
             .lock()
             .map_err(|error| DomainError::Database(error.to_string()))?;
-        let is_enabled_int = if is_enabled { 1 } else { 0 };
         let now = chrono::Utc::now().to_rfc3339();
         connection
             .execute(
-                "INSERT INTO skills_user_meta (skill_id, category_id, user_notes, is_enabled, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5)
+                "INSERT INTO skills_user_meta (skill_id, category_id, user_notes, updated_at)
+                 VALUES (?1, ?2, ?3, ?4)
                  ON CONFLICT(skill_id) DO UPDATE SET
                    category_id = excluded.category_id,
                    user_notes = excluded.user_notes,
-                   is_enabled = excluded.is_enabled,
                    updated_at = excluded.updated_at",
-                rusqlite::params![skill_id, category_id, user_notes, is_enabled_int, now],
+                rusqlite::params![skill_id, category_id, user_notes, now],
             )
             .map_err(database_error)?;
+        Ok(())
+    }
+
+    fn get_project_skills(&self, project_id: &str) -> DomainResult<Vec<String>> {
+        let connection = self
+            .connection
+            .lock()
+            .map_err(|error| DomainError::Database(error.to_string()))?;
+        let mut stmt = connection
+            .prepare("SELECT skill_id FROM project_skills WHERE project_id = ?1")
+            .map_err(database_error)?;
+        
+        let iter = stmt
+            .query_map([project_id], |r| r.get::<_, String>(0))
+            .map_err(database_error)?;
+        
+        let mut list = Vec::new();
+        for item in iter {
+            list.push(item.map_err(database_error)?);
+        }
+        Ok(list)
+    }
+
+    fn save_project_skill(&self, project_id: &str, skill_id: &str, enabled: bool) -> DomainResult<()> {
+        let connection = self
+            .connection
+            .lock()
+            .map_err(|error| DomainError::Database(error.to_string()))?;
+        
+        if enabled {
+            let now = chrono::Utc::now().to_rfc3339();
+            // First verify the skill exists in skills_user_meta to prevent FK violation
+            connection.execute(
+                "INSERT OR IGNORE INTO skills_user_meta (skill_id, updated_at) VALUES (?1, ?2)",
+                [skill_id, &now],
+            ).map_err(database_error)?;
+
+            connection.execute(
+                "INSERT OR IGNORE INTO project_skills (project_id, skill_id, enabled_at) VALUES (?1, ?2, ?3)",
+                [project_id, skill_id, &now],
+            ).map_err(database_error)?;
+        } else {
+            connection.execute(
+                "DELETE FROM project_skills WHERE project_id = ?1 AND skill_id = ?2",
+                [project_id, skill_id],
+            ).map_err(database_error)?;
+        }
         Ok(())
     }
 
@@ -223,5 +266,6 @@ mod tests {
         assert!(database.has_table("task_runs").unwrap());
         assert!(database.has_table("categories").unwrap());
         assert!(database.has_table("skills_user_meta").unwrap());
+        assert!(database.has_table("project_skills").unwrap());
     }
 }

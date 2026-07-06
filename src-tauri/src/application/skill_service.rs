@@ -35,9 +35,9 @@ impl SkillService {
                 if skill_md_path.exists() {
                     let content = fs::read_to_string(&skill_md_path).map_err(|e| DomainError::Database(e.to_string()))?;
                     if let Ok((metadata, html)) = parse_skill_markdown(&content) {
-                        let (cat_id, notes, enabled) = match self.repo.get_user_meta(&skill_id)? {
-                            Some(meta) => (meta.category_id, meta.user_notes, meta.is_enabled),
-                            None => (None, None, true),
+                        let (cat_id, notes) = match self.repo.get_user_meta(&skill_id)? {
+                            Some(meta) => (meta.category_id, meta.user_notes),
+                            None => (None, None),
                         };
                         list.push(Skill {
                             id: skill_id,
@@ -45,7 +45,6 @@ impl SkillService {
                             html_content: html,
                             category_id: cat_id,
                             user_notes: notes,
-                            is_enabled: enabled,
                         });
                     }
                 }
