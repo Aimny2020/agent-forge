@@ -5,6 +5,7 @@ import { McpPage } from '../features/mcp/McpPage';
 import { AgentsPage } from '../features/projects/pages/AgentsPage';
 import { EnvironmentPage } from '../features/projects/pages/EnvironmentPage';
 import { HarnessPage } from '../features/projects/pages/HarnessPage';
+import { ProjectSkillsPage } from '../features/projects/pages/ProjectSkillsPage';
 import { ProjectOverview } from '../features/projects/pages/ProjectOverview';
 import { ProjectsPage } from '../features/projects/ProjectsPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
@@ -24,6 +25,7 @@ export const appRoutes: RouteObject[] = [
         children: [
           { index: true, element: <ProjectOverview /> },
           { path: 'harness', element: <HarnessPage /> },
+          { path: 'skills', element: <ProjectSkillsPage /> },
           { path: 'agents', element: <AgentsPage /> },
           { path: 'environment', element: <EnvironmentPage /> },
         ],
