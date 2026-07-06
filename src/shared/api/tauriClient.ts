@@ -72,10 +72,29 @@ export async function updateSkillMeta(
   skillId: string,
   categoryId: string | null,
   userNotes: string | null,
-  isEnabled: boolean,
 ): Promise<void> {
   try {
-    await invoke<void>('update_skill_meta', { skillId, categoryId, userNotes, isEnabled });
+    await invoke<void>('update_skill_meta', { skillId, categoryId, userNotes });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getProjectSkills(projectId: string): Promise<string[]> {
+  try {
+    return await invoke<string[]>('get_project_skills', { projectId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function toggleProjectSkill(
+  projectId: string,
+  skillId: string,
+  enabled: boolean,
+): Promise<void> {
+  try {
+    await invoke<void>('toggle_project_skill', { projectId, skillId, enabled });
   } catch (error) {
     throw normalizeError(error);
   }

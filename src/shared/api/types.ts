@@ -26,7 +26,6 @@ export interface Skill {
   html_content: string;
   category_id?: string;
   user_notes?: string;
-  is_enabled: boolean;
 }
 
 export interface Category {
