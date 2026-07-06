@@ -68,7 +68,7 @@ export function ProjectSkillsPage() {
             {skills.map((skill) => {
               const isEnabled = enabledSkillIds.includes(skill.id);
               return (
-                <div className="harness-skill-row" key={skill.id}>
+                <div className="harness-skill-row" key={skill.id} data-enabled={isEnabled}>
                   <input
                     type="checkbox"
                     id={`skill-chk-${skill.id}`}
