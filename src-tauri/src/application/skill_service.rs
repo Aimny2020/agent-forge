@@ -200,6 +200,39 @@ mod tests {
     }
 
     #[test]
+    fn copy_dir_all_excludes_git_and_github() {
+        let fixture = Fixture::new();
+        let src = fixture.0.join("src");
+        let dst = fixture.0.join("dst");
+        fs::create_dir_all(&src).unwrap();
+        fs::write(src.join("SKILL.md"), "hello").unwrap();
+        
+        let git_dir = src.join(".git");
+        fs::create_dir_all(&git_dir).unwrap();
+        fs::write(git_dir.join("config"), "git-config").unwrap();
+
+        let github_dir = src.join(".github");
+        fs::create_dir_all(&github_dir).unwrap();
+        fs::write(github_dir.join("workflows.yml"), "workflow").unwrap();
+
+        let nested_dir = src.join("nested");
+        fs::create_dir_all(&nested_dir).unwrap();
+        fs::write(nested_dir.join("file.txt"), "content").unwrap();
+        let nested_git = nested_dir.join(".git");
+        fs::create_dir_all(&nested_git).unwrap();
+        fs::write(nested_git.join("nested-config"), "nested-git").unwrap();
+
+        let service = SkillService::with_skills_dir(Arc::new(EmptyRepository::default()), fixture.0.clone());
+        service.copy_dir_all(&src, &dst).unwrap();
+
+        assert!(dst.join("SKILL.md").exists());
+        assert!(dst.join("nested/file.txt").exists());
+        assert!(!dst.join(".git").exists());
+        assert!(!dst.join(".github").exists());
+        assert!(!dst.join("nested/.git").exists());
+    }
+
+    #[test]
     fn refuses_to_delete_a_pack_used_by_projects() {
         let fixture = Fixture::new();
         fixture.skill("shared/SKILL", "Shared");
@@ -728,6 +761,11 @@ impl SkillService {
         for entry in fs::read_dir(src)? {
             let entry = entry?;
             let ty = entry.file_type()?;
+            let file_name = entry.file_name();
+            let file_name_str = file_name.to_string_lossy();
+            if file_name_str == ".git" || file_name_str == ".github" {
+                continue;
+            }
             if ty.is_symlink() {
                 continue;
             }
