@@ -702,58 +702,229 @@ impl SkillService {
         };
         let project_path = Path::new(&project_path_str);
 
-        // 3. Define target .agents/skills/<skill_id> folder
-        let dest_dir = project_path.join(".agents").join("skills").join(skill_id);
+        if skill_id.contains("::") {
+            // It is a sub-skill
+            let parts: Vec<&str> = skill_id.split("::").collect();
+            let pack_id = parts[0];
+            let sub_path = parts[1];
+            
+            let pack_dest_dir = project_path.join(".agents").join("skills").join(pack_id);
+            let pack_src_dir = self.skills_dir.join(pack_id);
 
-        if enabled {
-            let src_dir = self.skills_dir.join(skill_id);
-            if src_dir.exists() {
-                let discovered = scan_skill_root(skill_id, &src_dir)?;
+            if enabled {
+                if !pack_src_dir.exists() {
+                    return Err(DomainError::Database(format!(
+                        "Global skill directory not found: {:?}",
+                        pack_src_dir
+                    )));
+                }
+
+                // Verify trust for parent pack
+                let discovered = scan_skill_root(pack_id, &pack_src_dir)?;
                 if discovered.has_executable_content {
-                    let record = self.repo.get_skill_package(skill_id)?;
+                    let record = self.repo.get_skill_package(pack_id)?;
                     let trusted = record.as_ref().is_some_and(|record| {
                         record.trusted_commit.is_some()
                             && record.trusted_commit == record.installed_commit
                     });
                     if !trusted {
                         return Err(DomainError::Database(format!(
-                            "Skill Pack {skill_id} contains executable content and is not trusted"
+                            "Skill Pack {pack_id} contains executable content and is not trusted"
                         )));
                     }
                 }
-                if dest_dir.exists() {
-                    fs::remove_dir_all(&dest_dir)
-                        .map_err(|e| DomainError::Database(e.to_string()))?;
-                }
-                self.copy_dir_all(&src_dir, &dest_dir)
-                    .map_err(|e| DomainError::Database(format!("Failed to copy skill: {}", e)))?;
+
+                // Save sub-skill to database
                 self.repo.save_project_skill(project_id, skill_id, true)?;
-                let commit = self
-                    .repo
-                    .get_skill_package(skill_id)?
-                    .and_then(|record| record.installed_commit);
-                self.repo.save_project_skill_state(
-                    project_id,
-                    skill_id,
-                    commit.as_deref(),
-                    "current",
-                )?;
+                // Ensure parent package row is also saved as enabled
+                self.repo.save_project_skill(project_id, pack_id, true)?;
+
+                // Copy package folder if not exists
+                if !pack_dest_dir.exists() {
+                    self.copy_dir_all(&pack_src_dir, &pack_dest_dir)
+                        .map_err(|e| DomainError::Database(format!("Failed to copy skill: {}", e)))?;
+                    
+                    let commit = self
+                        .repo
+                        .get_skill_package(pack_id)?
+                        .and_then(|record| record.installed_commit);
+                    self.repo.save_project_skill_state(
+                        project_id,
+                        pack_id,
+                        commit.as_deref(),
+                        "current",
+                    )?;
+                }
+
+                // Sync all members (will activate this one, and keep others disabled if they are disabled)
+                self.sync_package_members(project_id, &discovered, &pack_dest_dir)?;
+            } else {
+                // Disable sub-skill
+                self.repo.save_project_skill(project_id, skill_id, false)?;
+
+                let pack_src_dir = self.skills_dir.join(pack_id);
+                if pack_src_dir.exists() {
+                    let _ = scan_skill_root(pack_id, &pack_src_dir)?;
+                    
+                    // Rename its SKILL.md to SKILL.md.disabled
+                    let member_skill_md = pack_dest_dir.join(sub_path).join("SKILL.md");
+                    let member_skill_md_disabled = pack_dest_dir.join(sub_path).join("SKILL.md.disabled");
+                    if member_skill_md.exists() {
+                        fs::rename(&member_skill_md, &member_skill_md_disabled)
+                            .map_err(|e| DomainError::Database(e.to_string()))?;
+                    }
+
+                    // Check if other sub-skills of the same package are still enabled
+                    let enabled_skills = self.repo.get_project_skills(project_id)?;
+                    let has_other_enabled = enabled_skills.iter().any(|id| id.starts_with(&format!("{pack_id}::")));
+
+                    if !has_other_enabled {
+                        // No other sub-skills are enabled, clean up the package folder and parent database row
+                        if pack_dest_dir.exists() {
+                            fs::remove_dir_all(&pack_dest_dir)
+                                .map_err(|e| DomainError::Database(e.to_string()))?;
+                        }
+                        self.repo.save_project_skill(project_id, pack_id, false)?;
+                    }
+                }
+            }
+        } else {
+            // It is a standalone skill or the entire package toggled
+            let dest_dir = project_path.join(".agents").join("skills").join(skill_id);
+            let src_dir = self.skills_dir.join(skill_id);
+
+            if src_dir.exists() {
+                let discovered = scan_skill_root(skill_id, &src_dir)?;
+                if discovered.kind == SkillKind::Pack {
+                    // Package toggled
+                    if enabled {
+                        // Enable package
+                        if discovered.has_executable_content {
+                            let record = self.repo.get_skill_package(skill_id)?;
+                            let trusted = record.as_ref().is_some_and(|record| {
+                                record.trusted_commit.is_some()
+                                    && record.trusted_commit == record.installed_commit
+                            });
+                            if !trusted {
+                                return Err(DomainError::Database(format!(
+                                    "Skill Pack {skill_id} contains executable content and is not trusted"
+                                )));
+                            }
+                        }
+                        
+                        // Enable package row and all member rows in DB
+                        self.repo.save_project_skill(project_id, skill_id, true)?;
+                        for member in &discovered.members {
+                            self.repo.save_project_skill(project_id, &member.id, true)?;
+                        }
+
+                        // Copy entire folder
+                        if dest_dir.exists() {
+                            fs::remove_dir_all(&dest_dir)
+                                .map_err(|e| DomainError::Database(e.to_string()))?;
+                        }
+                        self.copy_dir_all(&src_dir, &dest_dir)
+                            .map_err(|e| DomainError::Database(format!("Failed to copy skill: {}", e)))?;
+
+                        // Activate all SKILL.md files (by syncing)
+                        self.sync_package_members(project_id, &discovered, &dest_dir)?;
+
+                        let commit = self
+                            .repo
+                            .get_skill_package(skill_id)?
+                            .and_then(|record| record.installed_commit);
+                        self.repo.save_project_skill_state(
+                            project_id,
+                            skill_id,
+                            commit.as_deref(),
+                            "current",
+                        )?;
+                    } else {
+                        // Disable package and all members
+                        self.repo.save_project_skill(project_id, skill_id, false)?;
+                        for member in &discovered.members {
+                            self.repo.save_project_skill(project_id, &member.id, false)?;
+                        }
+                        if dest_dir.exists() {
+                            fs::remove_dir_all(&dest_dir)
+                                .map_err(|e| DomainError::Database(e.to_string()))?;
+                        }
+                    }
+                } else {
+                    // Standalone skill toggled
+                    if enabled {
+                        if discovered.has_executable_content {
+                            let record = self.repo.get_skill_package(skill_id)?;
+                            let trusted = record.as_ref().is_some_and(|record| {
+                                record.trusted_commit.is_some()
+                                    && record.trusted_commit == record.installed_commit
+                            });
+                            if !trusted {
+                                return Err(DomainError::Database(format!(
+                                    "Skill Pack {skill_id} contains executable content and is not trusted"
+                                )));
+                            }
+                        }
+                        if dest_dir.exists() {
+                            fs::remove_dir_all(&dest_dir)
+                                .map_err(|e| DomainError::Database(e.to_string()))?;
+                        }
+                        self.copy_dir_all(&src_dir, &dest_dir)
+                            .map_err(|e| DomainError::Database(format!("Failed to copy skill: {}", e)))?;
+                        self.repo.save_project_skill(project_id, skill_id, true)?;
+                        let commit = self
+                            .repo
+                            .get_skill_package(skill_id)?
+                            .and_then(|record| record.installed_commit);
+                        self.repo.save_project_skill_state(
+                            project_id,
+                            skill_id,
+                            commit.as_deref(),
+                            "current",
+                        )?;
+                    } else {
+                        if dest_dir.exists() {
+                            fs::remove_dir_all(&dest_dir)
+                                .map_err(|e| DomainError::Database(e.to_string()))?;
+                        }
+                        self.repo.save_project_skill(project_id, skill_id, false)?;
+                    }
+                }
             } else {
                 return Err(DomainError::Database(format!(
                     "Global skill directory not found: {:?}",
                     src_dir
                 )));
             }
-        } else {
-            // Delete folder under project path
-            if dest_dir.exists() {
-                fs::remove_dir_all(&dest_dir).map_err(|e| {
-                    DomainError::Database(format!("Failed to remove skill directory: {}", e))
-                })?;
-            }
-            self.repo.save_project_skill(project_id, skill_id, false)?;
         }
 
+        Ok(())
+    }
+
+    fn sync_package_members(
+        &self,
+        project_id: &str,
+        discovered: &crate::application::skill_scanner::DiscoveredSkill,
+        dest_dir: &Path,
+    ) -> DomainResult<()> {
+        let enabled_skills = self.repo.get_project_skills(project_id)?;
+        for member in &discovered.members {
+            let is_member_enabled = enabled_skills.contains(&member.id);
+            let member_skill_md = dest_dir.join(&member.relative_path).join("SKILL.md");
+            let member_skill_md_disabled = dest_dir.join(&member.relative_path).join("SKILL.md.disabled");
+            
+            if is_member_enabled {
+                if member_skill_md_disabled.exists() && !member_skill_md.exists() {
+                    fs::rename(&member_skill_md_disabled, &member_skill_md)
+                        .map_err(|e| DomainError::Database(e.to_string()))?;
+                }
+            } else {
+                if member_skill_md.exists() {
+                    fs::rename(&member_skill_md, &member_skill_md_disabled)
+                        .map_err(|e| DomainError::Database(e.to_string()))?;
+                }
+            }
+        }
         Ok(())
     }
 

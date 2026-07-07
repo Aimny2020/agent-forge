@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getSkills, getProjectSkills, toggleProjectSkill, trustSkill } from '../../../shared/api/tauriClient';
 import type { Skill } from '../../../shared/api/types';
 import { useProjectStore } from '../../../shared/store/projectStore';
@@ -10,6 +11,9 @@ import './harness.css';
 export function ProjectSkillsPage() {
   const queryClient = useQueryClient();
   const { activeProjectId } = useProjectStore();
+  
+  // Track expanded packages
+  const [expandedPacks, setExpandedPacks] = useState<Record<string, boolean>>({});
 
   // Query global skills list
   const { data: skills = [], isLoading: skillsLoading } = useQuery({
@@ -52,8 +56,22 @@ export function ProjectSkillsPage() {
     );
   }
 
+  const togglePackExpand = (packId: string) => {
+    setExpandedPacks((prev) => ({ ...prev, [packId]: !prev[packId] }));
+  };
+
   const handleCheckboxChange = (skill: Skill, isChecked: boolean) => {
     toggleSkillMut.mutate({ skillId: skill.id, enabled: isChecked });
+  };
+
+  const handleSubSkillChange = (memberId: string, isChecked: boolean) => {
+    toggleSkillMut.mutate({ skillId: memberId, enabled: isChecked });
+  };
+
+  const setIndeterminate = (isAnyEnabled: boolean, isAllEnabled: boolean) => (el: HTMLInputElement | null) => {
+    if (el) {
+      el.indeterminate = isAnyEnabled && !isAllEnabled;
+    }
   };
 
   return (
@@ -67,34 +85,126 @@ export function ProjectSkillsPage() {
         ) : (
           <div className="harness-skills-list">
             {skills.map((skill) => {
-              const isEnabled = enabledSkillIds.includes(skill.id);
+              const isPack = skill.kind === 'pack';
               const isUntrusted = skill.has_executable_content && !skill.trusted;
+              
+              // Calculate package status
+              const enabledMembersCount = skill.members.filter((m) => enabledSkillIds.includes(m.id)).length;
+              const isAllEnabled = isPack && skill.members.length > 0 && enabledMembersCount === skill.members.length;
+              const isAnyEnabled = isPack && enabledMembersCount > 0;
+              const isPackChecked = isPack ? isAllEnabled : enabledSkillIds.includes(skill.id);
+              
+              const isExpanded = !!expandedPacks[skill.id];
+
               return (
-                <div 
-                  className="harness-skill-row" 
-                  key={skill.id} 
-                  data-enabled={isEnabled}
-                  style={isUntrusted ? { opacity: 0.6 } : undefined}
-                >
-                  <input
-                    type="checkbox"
-                    id={`skill-chk-${skill.id}`}
-                    checked={isEnabled}
-                    disabled={isUntrusted}
-                    onChange={(e) => handleCheckboxChange(skill, e.target.checked)}
-                  />
-                  <label 
-                    htmlFor={isUntrusted ? undefined : `skill-chk-${skill.id}`}
-                    style={{ cursor: isUntrusted ? 'not-allowed' : 'pointer', userSelect: 'none' }}
+                <div key={skill.id} className="harness-skill-item-container" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div 
+                    className="harness-skill-row" 
+                    data-enabled={isPackChecked || isAnyEnabled}
+                    style={isUntrusted ? { opacity: 0.6 } : undefined}
                   >
-                    <strong>{skill.metadata.name}</strong>
-                    {skill.kind === 'pack' && <span className="project-skill-pack-label">技能扩展包 · {skill.members.length} 个 Skills</span>}
-                    {isUntrusted && (
-                      <span className="project-skill-pack-label" style={{ color: '#cf222e', marginLeft: '8px' }}>
-                        (包含可执行内容，请在 Skills 管理页授权信任后启用)
-                      </span>
+                    {isPack && (
+                      <button
+                        type="button"
+                        onClick={() => togglePackExpand(skill.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--color-muted)',
+                          marginRight: '2px'
+                        }}
+                      >
+                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      </button>
                     )}
-                  </label>
+                    <input
+                      type="checkbox"
+                      id={`skill-chk-${skill.id}`}
+                      checked={isPackChecked}
+                      disabled={isUntrusted}
+                      ref={isPack ? setIndeterminate(isAnyEnabled, isAllEnabled) : undefined}
+                      onChange={(e) => handleCheckboxChange(skill, e.target.checked)}
+                    />
+                    <label 
+                      htmlFor={isUntrusted ? undefined : `skill-chk-${skill.id}`}
+                      style={{ cursor: isUntrusted ? 'not-allowed' : 'pointer', userSelect: 'none' }}
+                    >
+                      <strong>{skill.metadata.name}</strong>
+                      {isPack ? (
+                        <span className="project-skill-pack-label">
+                          技能扩展包 · {enabledMembersCount}/{skill.members.length} 启用
+                        </span>
+                      ) : null}
+                      {isUntrusted && (
+                        <span className="project-skill-pack-label" style={{ color: '#cf222e', marginLeft: '8px' }}>
+                          (包含可执行内容，请在 Skills 管理页授权信任后启用)
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                  
+                  {isPack && isExpanded && (
+                    <div 
+                      className="harness-sub-skills-list"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        paddingLeft: '28px',
+                        borderLeft: '1px solid var(--color-outline, #e1e4e8)',
+                        marginLeft: '18px',
+                        marginTop: '4px',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      {skill.members.map((member) => {
+                        const isMemberEnabled = enabledSkillIds.includes(member.id);
+                        return (
+                          <div 
+                            key={member.id} 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '8px', 
+                              opacity: isUntrusted ? 0.6 : 1, 
+                              padding: '4px 0' 
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              id={`skill-chk-${member.id}`}
+                              checked={isMemberEnabled}
+                              disabled={isUntrusted}
+                              onChange={(e) => handleSubSkillChange(member.id, e.target.checked)}
+                              style={{ width: '16px', height: '16px', cursor: isUntrusted ? 'not-allowed' : 'pointer' }}
+                            />
+                            <label 
+                              htmlFor={isUntrusted ? undefined : `skill-chk-${member.id}`}
+                              style={{ 
+                                cursor: isUntrusted ? 'not-allowed' : 'pointer', 
+                                userSelect: 'none', 
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                fontSize: '0.85rem' 
+                              }}
+                            >
+                              <strong style={{ color: 'var(--color-ink)', fontWeight: 500 }}>{member.metadata.name}</strong>
+                              {member.metadata.description && (
+                                <span className="project-skill-pack-label" style={{ fontSize: '0.7rem' }}>
+                                  {member.metadata.description}
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
