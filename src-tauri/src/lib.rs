@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use application::health_service::HealthService;
 use commands::health::{health_check, AppState};
-use commands::skills::*;
 use commands::projects::*;
+use commands::skills::*;
 use infrastructure::database::SqliteDatabase;
 use infrastructure::system::PlatformSystem;
 use tauri::Manager;
@@ -26,7 +26,9 @@ pub fn run() {
 
             let database = Arc::new(SqliteDatabase::open(&app_data_dir.join("agentforge.db"))?);
             let system = Arc::new(PlatformSystem::current());
-            let skills = application::skill_service::SkillService::new(Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>);
+            let skills = application::skill_service::SkillService::new(
+                Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>
+            );
             let repo = Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>;
             app.manage(AppState {
                 health: HealthService::new(database, system),
@@ -39,7 +41,12 @@ pub fn run() {
             health_check,
             get_skills,
             import_skill,
+            inspect_skill_import,
             delete_skill,
+            check_skill_updates,
+            update_skill,
+            trust_skill,
+            delete_skill_everywhere,
             update_skill_meta,
             get_project_skills,
             toggle_project_skill,

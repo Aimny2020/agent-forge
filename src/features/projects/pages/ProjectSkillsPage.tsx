@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSkills, getProjectSkills, toggleProjectSkill } from '../../../shared/api/tauriClient';
+import { getSkills, getProjectSkills, toggleProjectSkill, trustSkill } from '../../../shared/api/tauriClient';
+import type { Skill } from '../../../shared/api/types';
 import { useProjectStore } from '../../../shared/store/projectStore';
 import { Card } from '../../../shared/ui/Card';
 import { PageState } from '../../../shared/ui/PageState';
@@ -51,8 +52,14 @@ export function ProjectSkillsPage() {
     );
   }
 
-  const handleCheckboxChange = (skillId: string, isChecked: boolean) => {
-    toggleSkillMut.mutate({ skillId, enabled: isChecked });
+  const handleCheckboxChange = async (skill: Skill, isChecked: boolean) => {
+    if (isChecked && skill.has_executable_content && !skill.trusted) {
+      const accepted = confirm(`“${skill.metadata.name}” 包含脚本或可执行内容。是否信任当前版本并启用？`);
+      if (!accepted) return;
+      await trustSkill(skill.id);
+      await queryClient.invalidateQueries({ queryKey: ['skills'] });
+    }
+    toggleSkillMut.mutate({ skillId: skill.id, enabled: isChecked });
   };
 
   return (
@@ -73,10 +80,11 @@ export function ProjectSkillsPage() {
                     type="checkbox"
                     id={`skill-chk-${skill.id}`}
                     checked={isEnabled}
-                    onChange={(e) => handleCheckboxChange(skill.id, e.target.checked)}
+                    onChange={(e) => handleCheckboxChange(skill, e.target.checked)}
                   />
                   <label htmlFor={`skill-chk-${skill.id}`} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <strong>{skill.metadata.name}</strong>
+                    {skill.kind === 'pack' && <span className="project-skill-pack-label">技能扩展包 · {skill.members.length} 个 Skills</span>}
                   </label>
                 </div>
               );

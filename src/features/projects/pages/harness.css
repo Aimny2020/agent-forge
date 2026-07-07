@@ -16,6 +16,18 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
+.harness-skill-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-skill-pack-label {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
 .harness-skill-row:hover {
   background: var(--color-surface-strong);
 }

@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { CommandFailure, HealthReport, Skill, Category, Project } from './types';
+import type { CommandFailure, HealthReport, ImportInspection, Skill, SkillUpdate, Category, Project } from './types';
 
 export class AppError extends Error {
   constructor(
@@ -60,9 +60,52 @@ export async function importSkill(source: string, importType: 'folder' | 'git'):
   }
 }
 
+export async function inspectSkillImport(
+  source: string,
+  importType: 'folder' | 'git',
+): Promise<ImportInspection> {
+  try {
+    return await invoke<ImportInspection>('inspect_skill_import', { source, importType });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
 export async function deleteSkill(skillId: string): Promise<void> {
   try {
     await invoke<void>('delete_skill', { skillId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function deleteSkillEverywhere(skillId: string): Promise<void> {
+  try {
+    await invoke<void>('delete_skill_everywhere', { skillId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function checkSkillUpdates(): Promise<SkillUpdate[]> {
+  try {
+    return await invoke<SkillUpdate[]>('check_skill_updates');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function updateSkill(skillId: string): Promise<SkillUpdate> {
+  try {
+    return await invoke<SkillUpdate>('update_skill', { skillId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function trustSkill(skillId: string): Promise<void> {
+  try {
+    await invoke<void>('trust_skill', { skillId });
   } catch (error) {
     throw normalizeError(error);
   }

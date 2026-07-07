@@ -1,14 +1,259 @@
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::fs;
-use crate::domain::ports::SkillRepository;
-use crate::domain::skill::Skill;
+use std::hash::{Hash, Hasher};
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::Arc;
+
+use crate::application::skill_scanner::scan_skill_root;
 use crate::domain::error::{DomainError, DomainResult};
-use crate::infrastructure::markdown::parse_skill_markdown;
+use crate::domain::ports::SkillRepository;
+use crate::domain::skill::{
+    ImportInspection, Skill, SkillKind, SkillPackageRecord, SkillSourceInfo, SkillUpdate,
+    SourceKind, UpdateStatus,
+};
 
 pub struct SkillService {
     repo: Arc<dyn SkillRepository>,
     skills_dir: PathBuf,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+
+    use crate::domain::error::DomainResult;
+    use crate::domain::ports::SkillRepository;
+    use crate::domain::project::Project;
+    use crate::domain::skill::{Category, UserSkillMeta};
+
+    use super::{
+        git_worktree_is_dirty, normalize_git_url, select_latest_stable_tag, trust_matches,
+        SkillService,
+    };
+
+    #[derive(Default)]
+    struct EmptyRepository {
+        projects_using: Vec<String>,
+    }
+
+    impl SkillRepository for EmptyRepository {
+        fn get_projects(&self) -> DomainResult<Vec<Project>> {
+            Ok(Vec::new())
+        }
+        fn get_project_path(&self, _id: &str) -> DomainResult<Option<String>> {
+            Ok(None)
+        }
+        fn create_project(&self, _project: &Project) -> DomainResult<()> {
+            Ok(())
+        }
+        fn delete_project(&self, _id: &str) -> DomainResult<()> {
+            Ok(())
+        }
+        fn get_user_meta(&self, _skill_id: &str) -> DomainResult<Option<UserSkillMeta>> {
+            Ok(None)
+        }
+        fn save_user_meta(
+            &self,
+            _skill_id: &str,
+            _category_id: Option<&str>,
+            _user_notes: Option<&str>,
+        ) -> DomainResult<()> {
+            Ok(())
+        }
+        fn delete_user_meta(&self, _skill_id: &str) -> DomainResult<()> {
+            Ok(())
+        }
+        fn get_skill_package(
+            &self,
+            _skill_id: &str,
+        ) -> DomainResult<Option<crate::domain::skill::SkillPackageRecord>> {
+            Ok(None)
+        }
+        fn save_skill_package(
+            &self,
+            _record: &crate::domain::skill::SkillPackageRecord,
+        ) -> DomainResult<()> {
+            Ok(())
+        }
+        fn find_skill_by_source(&self, _source_url: &str) -> DomainResult<Option<String>> {
+            Ok(None)
+        }
+        fn get_project_skills(&self, _project_id: &str) -> DomainResult<Vec<String>> {
+            Ok(Vec::new())
+        }
+        fn save_project_skill(
+            &self,
+            _project_id: &str,
+            _skill_id: &str,
+            _enabled: bool,
+        ) -> DomainResult<()> {
+            Ok(())
+        }
+        fn get_projects_using_skill(&self, _skill_id: &str) -> DomainResult<Vec<String>> {
+            Ok(self.projects_using.clone())
+        }
+        fn save_project_skill_state(
+            &self,
+            _project_id: &str,
+            _skill_id: &str,
+            _installed_commit: Option<&str>,
+            _sync_state: &str,
+        ) -> DomainResult<()> {
+            Ok(())
+        }
+        fn get_categories(&self) -> DomainResult<Vec<Category>> {
+            Ok(Vec::new())
+        }
+        fn create_category(
+            &self,
+            id: &str,
+            name: &str,
+            created_at: &str,
+        ) -> DomainResult<Category> {
+            Ok(Category {
+                id: id.into(),
+                name: name.into(),
+                created_at: created_at.into(),
+            })
+        }
+        fn rename_category(&self, _id: &str, _name: &str) -> DomainResult<()> {
+            Ok(())
+        }
+        fn delete_category(&self, _id: &str) -> DomainResult<()> {
+            Ok(())
+        }
+    }
+
+    struct Fixture(PathBuf);
+
+    impl Fixture {
+        fn new() -> Self {
+            let path =
+                std::env::temp_dir().join(format!("agentforge-service-{}", uuid::Uuid::new_v4()));
+            fs::create_dir_all(&path).unwrap();
+            Self(path)
+        }
+
+        fn skill(&self, relative: &str, name: &str) {
+            let path = self.0.join(relative);
+            fs::create_dir_all(&path).unwrap();
+            fs::write(
+                path.join("SKILL.md"),
+                format!("---\nname: {name}\ndescription: {name} description\n---\n# {name}"),
+            )
+            .unwrap();
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn get_skills_returns_nested_pack_as_one_catalog_entry() {
+        let fixture = Fixture::new();
+        fixture.skill("taste-skill/skills/alpha", "Alpha");
+        fixture.skill("taste-skill/skills/beta", "Beta");
+        let service =
+            SkillService::with_skills_dir(Arc::new(EmptyRepository::default()), fixture.0.clone());
+
+        let skills = service.get_skills().unwrap();
+
+        assert_eq!(skills.len(), 1);
+        assert_eq!(skills[0].id, "taste-skill");
+        assert_eq!(skills[0].kind.as_str(), "pack");
+        assert_eq!(skills[0].members.len(), 2);
+    }
+
+    #[test]
+    fn imports_a_local_skill_pack_without_a_root_skill_file() {
+        let fixture = Fixture::new();
+        fixture.skill("source-pack/skills/alpha", "Alpha");
+        fixture.skill("source-pack/skills/beta", "Beta");
+        let library = fixture.0.join("library");
+        fs::create_dir_all(&library).unwrap();
+        let service =
+            SkillService::with_skills_dir(Arc::new(EmptyRepository::default()), library.clone());
+
+        let imported = service
+            .import_local_folder(fixture.0.join("source-pack").to_str().unwrap())
+            .unwrap();
+
+        assert_eq!(imported, "source-pack");
+        assert!(library.join("source-pack/skills/alpha/SKILL.md").exists());
+    }
+
+    #[test]
+    fn normalizes_common_git_url_spellings_for_deduplication() {
+        assert_eq!(
+            normalize_git_url("https://github.com/obra/superpowers.git").unwrap(),
+            "github.com/obra/superpowers"
+        );
+        assert_eq!(
+            normalize_git_url("git@github.com:obra/superpowers.git").unwrap(),
+            "github.com/obra/superpowers"
+        );
+    }
+
+    #[test]
+    fn refuses_to_delete_a_pack_used_by_projects() {
+        let fixture = Fixture::new();
+        fixture.skill("shared/SKILL", "Shared");
+        let repository = EmptyRepository {
+            projects_using: vec!["project-1".into()],
+        };
+        let service = SkillService::with_skills_dir(Arc::new(repository), fixture.0.clone());
+
+        let error = service.delete_skill("shared").unwrap_err().to_string();
+
+        assert!(error.contains("project-1"));
+        assert!(fixture.0.join("shared").exists());
+    }
+
+    #[test]
+    fn selects_highest_stable_semantic_tag() {
+        let refs = "aaa refs/tags/v5.9.0\nbbb refs/tags/v6.1.1\nccc refs/tags/v6.2.0-beta.1\n";
+
+        assert_eq!(select_latest_stable_tag(refs), Some("v6.1.1".into()));
+    }
+
+    #[test]
+    fn detects_dirty_git_worktrees() {
+        let fixture = Fixture::new();
+        fixture.skill("repo", "Repo");
+        let repo = fixture.0.join("repo");
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "agentforge@example.test"]);
+        run_git(&repo, &["config", "user.name", "AgentForge Test"]);
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial"]);
+        assert!(!git_worktree_is_dirty(&repo).unwrap());
+
+        fs::write(repo.join("SKILL.md"), "changed").unwrap();
+
+        assert!(git_worktree_is_dirty(&repo).unwrap());
+    }
+
+    #[test]
+    fn dirty_content_invalidates_commit_trust() {
+        assert!(trust_matches(Some("abc"), Some("abc"), false));
+        assert!(!trust_matches(Some("abc"), Some("abc"), true));
+        assert!(!trust_matches(Some("abc"), Some("def"), false));
+    }
+
+    fn run_git(path: &std::path::Path, args: &[&str]) {
+        let status = std::process::Command::new("git")
+            .arg("-C")
+            .arg(path)
+            .args(args)
+            .status()
+            .unwrap();
+        assert!(status.success());
+    }
 }
 
 impl SkillService {
@@ -21,33 +266,100 @@ impl SkillService {
         Self { repo, skills_dir }
     }
 
+    #[cfg(test)]
+    fn with_skills_dir(repo: Arc<dyn SkillRepository>, skills_dir: PathBuf) -> Self {
+        Self { repo, skills_dir }
+    }
+
     pub fn get_skills(&self) -> DomainResult<Vec<Skill>> {
         let mut list = Vec::new();
         if !self.skills_dir.exists() {
             return Ok(list);
         }
-        for entry in fs::read_dir(&self.skills_dir).map_err(|e| DomainError::Database(e.to_string()))? {
-            let entry = entry.map_err(|e| DomainError::Database(e.to_string()))?;
+        let mut entries = fs::read_dir(&self.skills_dir)
+            .map_err(|e| DomainError::Database(e.to_string()))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| DomainError::Database(e.to_string()))?;
+        entries.sort_by_key(|entry| entry.file_name());
+        for entry in entries {
             let path = entry.path();
-            if path.is_dir() {
-                let skill_id = path.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string();
-                let skill_md_path = path.join("SKILL.md");
-                if skill_md_path.exists() {
-                    let content = fs::read_to_string(&skill_md_path).map_err(|e| DomainError::Database(e.to_string()))?;
-                    if let Ok((metadata, html)) = parse_skill_markdown(&content) {
-                        let (cat_id, notes) = match self.repo.get_user_meta(&skill_id)? {
-                            Some(meta) => (meta.category_id, meta.user_notes),
-                            None => (None, None),
-                        };
-                        list.push(Skill {
-                            id: skill_id,
-                            metadata,
-                            html_content: html,
-                            category_id: cat_id,
-                            user_notes: notes,
-                        });
+            let file_type = entry
+                .file_type()
+                .map_err(|error| DomainError::Database(error.to_string()))?;
+            if !file_type.is_dir() || file_type.is_symlink() {
+                continue;
+            }
+            let skill_id = entry.file_name().to_string_lossy().into_owned();
+            if let Ok(mut discovered) = scan_skill_root(&skill_id, &path) {
+                let (category_id, user_notes) = match self.repo.get_user_meta(&skill_id)? {
+                    Some(meta) => (meta.category_id, meta.user_notes),
+                    None => (None, None),
+                };
+                let filesystem_source = git_source(&path).unwrap_or_else(SkillSourceInfo::local);
+                let mut record = self
+                    .repo
+                    .get_skill_package(&skill_id)?
+                    .unwrap_or_else(|| package_record(&skill_id, &path, &filesystem_source));
+                if filesystem_source.kind == SourceKind::Git {
+                    record.source_kind = SourceKind::Git;
+                    record.source_url = filesystem_source.url.clone();
+                    record.normalized_source = filesystem_source
+                        .url
+                        .as_deref()
+                        .and_then(|url| normalize_git_url(url).ok());
+                    if let Some(normalized) = record.normalized_source.as_deref() {
+                        if let Some(existing) = self.repo.find_skill_by_source(normalized)? {
+                            if existing != skill_id {
+                                discovered
+                                    .warnings
+                                    .push(format!("Git 来源与已安装的 {existing} 重复"));
+                                record.normalized_source = None;
+                            }
+                        }
                     }
+                    record.tracked_ref = filesystem_source.tracked_ref.clone();
+                    record.installed_commit = filesystem_source.installed_commit.clone();
+                } else {
+                    record.installed_commit = Some(local_revision(&path));
                 }
+                let dirty = filesystem_source.kind == SourceKind::Git
+                    && git_worktree_is_dirty(&path).unwrap_or(true);
+                let trusted = trust_matches(
+                    record.trusted_commit.as_deref(),
+                    record.installed_commit.as_deref(),
+                    dirty,
+                );
+                self.repo.save_skill_package(&record)?;
+                let source = SkillSourceInfo {
+                    kind: record.source_kind,
+                    url: record.source_url.clone(),
+                    tracked_ref: record.tracked_ref.clone(),
+                    installed_commit: record.installed_commit.clone(),
+                };
+                let update_status = if source.kind == SourceKind::Git {
+                    if dirty {
+                        UpdateStatus::Dirty
+                    } else {
+                        UpdateStatus::Unknown
+                    }
+                } else {
+                    UpdateStatus::NotApplicable
+                };
+                list.push(Skill {
+                    id: discovered.id,
+                    kind: discovered.kind,
+                    metadata: discovered.metadata,
+                    html_content: discovered.html_content,
+                    members: discovered.members,
+                    category_id,
+                    user_notes,
+                    source,
+                    update_status,
+                    available_commit: None,
+                    has_executable_content: discovered.has_executable_content,
+                    trusted,
+                    warnings: discovered.warnings,
+                });
             }
         }
         Ok(list)
@@ -56,47 +368,281 @@ impl SkillService {
     pub fn import_local_folder(&self, source_path: &str) -> DomainResult<String> {
         let src = Path::new(source_path);
         if !src.exists() || !src.is_dir() {
-            return Err(DomainError::Database("Source directory does not exist".into()));
+            return Err(DomainError::Database(
+                "Source directory does not exist".into(),
+            ));
         }
-        let md_path = src.join("SKILL.md");
-        if !md_path.exists() {
-            return Err(DomainError::Database("SKILL.md not found in source directory".into()));
-        }
-        let id = src.file_name().and_then(|s| s.to_str()).ok_or_else(|| DomainError::Database("Invalid folder name".into()))?;
+        let id = src
+            .file_name()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| DomainError::Database("Invalid folder name".into()))?;
+        scan_skill_root(id, src)?;
         let dest = self.skills_dir.join(id);
         if dest.exists() {
-            fs::remove_dir_all(&dest).map_err(|e| DomainError::Database(e.to_string()))?;
+            return Err(DomainError::Database(format!(
+                "Skill {id} is already installed"
+            )));
         }
-        self.copy_dir_all(src, &dest).map_err(|e| DomainError::Database(e.to_string()))?;
+        self.copy_dir_all(src, &dest)
+            .map_err(|e| DomainError::Database(e.to_string()))?;
+        let source = SkillSourceInfo::local();
+        self.repo
+            .save_skill_package(&package_record(id, &dest, &source))?;
         Ok(id.to_string())
     }
 
-    pub fn import_git_url(&self, url: &str) -> DomainResult<String> {
-        let repo_name = url.split('/')
-            .last()
-            .and_then(|s| s.strip_suffix(".git").or(Some(s)))
+    pub fn inspect_import(
+        &self,
+        source: &str,
+        import_type: &str,
+    ) -> DomainResult<ImportInspection> {
+        if import_type != "git" {
+            let path = Path::new(source);
+            let id = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .ok_or_else(|| DomainError::Database("Invalid folder name".into()))?;
+            let discovered = scan_skill_root(id, path)?;
+            return Ok(inspection_from_discovered(discovered, None, None));
+        }
+
+        let normalized = normalize_git_url(source)?;
+        if let Some(existing) = self.repo.find_skill_by_source(&normalized)? {
+            return Ok(ImportInspection {
+                name: existing.clone(),
+                kind: SkillKind::Pack,
+                member_count: 0,
+                has_executable_content: false,
+                warnings: Vec::new(),
+                recommended_ref: None,
+                duplicate_skill_id: Some(existing),
+            });
+        }
+        let id = normalized
+            .rsplit('/')
+            .next()
             .ok_or_else(|| DomainError::Database("Invalid Git URL".into()))?;
-        let dest = self.skills_dir.join(repo_name);
-        if dest.exists() {
-            fs::remove_dir_all(&dest).map_err(|e| DomainError::Database(e.to_string()))?;
-        }
-        // Run command git clone
-        let status = std::process::Command::new("git")
-            .args(["clone", url, dest.to_str().unwrap()])
-            .status()
-            .map_err(|e| DomainError::Database(format!("Git clone execution error: {}", e)))?;
-        
+        let recommended_ref = latest_stable_tag(source);
+        let staging = self
+            .skills_dir
+            .join(format!(".{id}-inspect-{}", uuid::Uuid::new_v4()));
+        let status = clone_repository(source, recommended_ref.as_deref(), &staging)?;
         if !status.success() {
-            return Err(DomainError::Database("git clone command exited with error".into()));
+            let _ = fs::remove_dir_all(&staging);
+            return Err(DomainError::Database(
+                "git clone command exited with error".into(),
+            ));
         }
-        let md_path = dest.join("SKILL.md");
-        if !md_path.exists() {
-            return Err(DomainError::Database("Imported git repository does not contain a SKILL.md".into()));
+        let result = scan_skill_root(id, &staging)
+            .map(|discovered| inspection_from_discovered(discovered, recommended_ref, None));
+        let _ = fs::remove_dir_all(&staging);
+        result
+    }
+
+    pub fn import_git_url(&self, url: &str) -> DomainResult<String> {
+        let normalized = normalize_git_url(url)?;
+        if let Some(existing) = self.repo.find_skill_by_source(&normalized)? {
+            return Err(DomainError::Database(format!(
+                "Git source is already installed as {existing}"
+            )));
         }
-        Ok(repo_name.to_string())
+        let repo_name = normalized
+            .rsplit('/')
+            .next()
+            .filter(|name| !name.is_empty())
+            .ok_or_else(|| DomainError::Database("Invalid Git URL".into()))?
+            .to_string();
+        let dest = self.skills_dir.join(&repo_name);
+        if dest.exists() {
+            return Err(DomainError::Database(format!(
+                "Skill {repo_name} is already installed"
+            )));
+        }
+        let staging = self
+            .skills_dir
+            .join(format!(".{repo_name}-import-{}", uuid::Uuid::new_v4()));
+        let stable_tag = latest_stable_tag(url);
+        let status = clone_repository(url, stable_tag.as_deref(), &staging)?;
+
+        if !status.success() {
+            let _ = fs::remove_dir_all(&staging);
+            return Err(DomainError::Database(
+                "git clone command exited with error".into(),
+            ));
+        }
+        if let Err(error) = scan_skill_root(&repo_name, &staging) {
+            let _ = fs::remove_dir_all(&staging);
+            return Err(error);
+        }
+        fs::rename(&staging, &dest).map_err(|error| DomainError::Database(error.to_string()))?;
+        let source = git_source(&dest)
+            .ok_or_else(|| DomainError::Database("Git metadata is unavailable".into()))?;
+        let mut record = package_record(&repo_name, &dest, &source);
+        record.source_url = Some(url.to_string());
+        record.normalized_source = Some(normalized);
+        self.repo.save_skill_package(&record)?;
+        Ok(repo_name)
+    }
+
+    pub fn check_skill_updates(&self) -> DomainResult<Vec<SkillUpdate>> {
+        let mut updates = Vec::new();
+        for skill in self.get_skills()? {
+            if skill.source.kind != SourceKind::Git {
+                continue;
+            }
+            let path = self.skills_dir.join(&skill.id);
+            let installed_commit = skill.source.installed_commit.clone();
+            let (status, available_commit) = if git_worktree_is_dirty(&path)? {
+                (UpdateStatus::Dirty, None)
+            } else if let (Some(url), Some(tracked_ref)) = (
+                skill.source.url.as_deref(),
+                skill.source.tracked_ref.as_deref(),
+            ) {
+                match resolve_remote_target(url, tracked_ref).map(|(_, commit)| commit) {
+                    Some(remote) if Some(&remote) == installed_commit.as_ref() => {
+                        (UpdateStatus::Current, Some(remote))
+                    }
+                    Some(remote) => (UpdateStatus::Available, Some(remote)),
+                    None => (UpdateStatus::Unknown, None),
+                }
+            } else {
+                (UpdateStatus::Unknown, None)
+            };
+            if let Some(mut record) = self.repo.get_skill_package(&skill.id)? {
+                record.last_checked_at = Some(chrono::Utc::now().to_rfc3339());
+                self.repo.save_skill_package(&record)?;
+            }
+            updates.push(SkillUpdate {
+                skill_id: skill.id,
+                status,
+                installed_commit,
+                available_commit,
+            });
+        }
+        Ok(updates)
+    }
+
+    pub fn update_skill(&self, skill_id: &str) -> DomainResult<SkillUpdate> {
+        let path = self.skills_dir.join(skill_id);
+        if git_worktree_is_dirty(&path)? {
+            return Err(DomainError::Database(format!(
+                "Skill Pack {skill_id} has local modifications"
+            )));
+        }
+        let mut record = self
+            .repo
+            .get_skill_package(skill_id)?
+            .ok_or_else(|| DomainError::Database("Skill Pack provenance is unavailable".into()))?;
+        let url = record
+            .source_url
+            .clone()
+            .ok_or_else(|| DomainError::Database("Git remote is unavailable".into()))?;
+        let tracked_ref = record
+            .tracked_ref
+            .clone()
+            .ok_or_else(|| DomainError::Database("Tracked Git ref is unavailable".into()))?;
+        let (available_ref, available_commit) = resolve_remote_target(&url, &tracked_ref)
+            .ok_or_else(|| DomainError::Database("Unable to resolve remote Git ref".into()))?;
+        if record.installed_commit.as_deref() == Some(&available_commit) {
+            return Ok(SkillUpdate {
+                skill_id: skill_id.into(),
+                status: UpdateStatus::Current,
+                installed_commit: record.installed_commit,
+                available_commit: Some(available_commit),
+            });
+        }
+
+        let staging = self
+            .skills_dir
+            .join(format!(".{skill_id}-update-{}", uuid::Uuid::new_v4()));
+        let backup = self
+            .skills_dir
+            .join(format!(".{skill_id}-backup-{}", uuid::Uuid::new_v4()));
+        let status = clone_repository(&url, Some(&available_ref), &staging)?;
+        if !status.success() {
+            let _ = fs::remove_dir_all(&staging);
+            return Err(DomainError::Database(
+                "git clone command exited with error".into(),
+            ));
+        }
+        scan_skill_root(skill_id, &staging)?;
+        fs::rename(&path, &backup).map_err(|error| DomainError::Database(error.to_string()))?;
+        if let Err(error) = fs::rename(&staging, &path) {
+            let _ = fs::rename(&backup, &path);
+            return Err(DomainError::Database(error.to_string()));
+        }
+
+        let source = git_source(&path)
+            .ok_or_else(|| DomainError::Database("Updated Git metadata is unavailable".into()))?;
+        record.installed_commit = source.installed_commit.clone();
+        record.tracked_ref = source.tracked_ref.or(Some(available_ref));
+        record.trusted_commit = None;
+        record.last_checked_at = Some(chrono::Utc::now().to_rfc3339());
+        self.repo.save_skill_package(&record)?;
+
+        for project_id in self.repo.get_projects_using_skill(skill_id)? {
+            if let Some(project_path) = self.repo.get_project_path(&project_id)? {
+                let destination = Path::new(&project_path)
+                    .join(".agent")
+                    .join("skills")
+                    .join(skill_id);
+                let modified = destination.exists()
+                    && destination.join(".git").exists()
+                    && git_worktree_is_dirty(&destination)?;
+                if !modified {
+                    if destination.exists() {
+                        fs::remove_dir_all(&destination)
+                            .map_err(|error| DomainError::Database(error.to_string()))?;
+                    }
+                    self.copy_dir_all(&path, &destination)
+                        .map_err(|error| DomainError::Database(error.to_string()))?;
+                    self.repo.save_project_skill_state(
+                        &project_id,
+                        skill_id,
+                        record.installed_commit.as_deref(),
+                        "current",
+                    )?;
+                } else {
+                    self.repo
+                        .save_project_skill_state(&project_id, skill_id, None, "modified")?;
+                }
+            }
+        }
+        let _ = fs::remove_dir_all(&backup);
+
+        Ok(SkillUpdate {
+            skill_id: skill_id.into(),
+            status: UpdateStatus::Current,
+            installed_commit: record.installed_commit,
+            available_commit: Some(available_commit),
+        })
+    }
+
+    pub fn trust_skill(&self, skill_id: &str) -> DomainResult<()> {
+        let path = self.skills_dir.join(skill_id);
+        let mut record = self
+            .repo
+            .get_skill_package(skill_id)?
+            .unwrap_or_else(|| package_record(skill_id, &path, &SkillSourceInfo::local()));
+        record.trusted_commit = record.installed_commit.clone();
+        self.repo.save_skill_package(&record)
+    }
+
+    pub fn delete_skill_everywhere(&self, skill_id: &str) -> DomainResult<()> {
+        for project_id in self.repo.get_projects_using_skill(skill_id)? {
+            self.toggle_project_skill(&project_id, skill_id, false)?;
+        }
+        self.delete_skill(skill_id)
     }
 
     pub fn delete_skill(&self, skill_id: &str) -> DomainResult<()> {
+        let projects = self.repo.get_projects_using_skill(skill_id)?;
+        if !projects.is_empty() {
+            return Err(DomainError::Database(format!(
+                "Skill Pack is enabled in projects: {}",
+                projects.join(", ")
+            )));
+        }
         let path = self.skills_dir.join(skill_id);
         if path.exists() && path.is_dir() {
             fs::remove_dir_all(&path).map_err(|e| DomainError::Database(e.to_string()))?;
@@ -105,35 +651,73 @@ impl SkillService {
         Ok(())
     }
 
-    pub fn toggle_project_skill(&self, project_id: &str, skill_id: &str, enabled: bool) -> DomainResult<()> {
-        // 1. Save state to database
-        self.repo.save_project_skill(project_id, skill_id, enabled)?;
-
-        // 2. Fetch project directory path
+    pub fn toggle_project_skill(
+        &self,
+        project_id: &str,
+        skill_id: &str,
+        enabled: bool,
+    ) -> DomainResult<()> {
         let project_path_str = match self.repo.get_project_path(project_id)? {
             Some(path) => path,
-            None => return Err(DomainError::Database(format!("Project with ID {} not found", project_id))),
+            None => {
+                return Err(DomainError::Database(format!(
+                    "Project with ID {} not found",
+                    project_id
+                )))
+            }
         };
         let project_path = Path::new(&project_path_str);
-        
+
         // 3. Define target .agent/skills/<skill_id> folder
         let dest_dir = project_path.join(".agent").join("skills").join(skill_id);
 
         if enabled {
-            // Copy from global library (~/.agent-forge/skills/<skill_id>) to project path
             let src_dir = self.skills_dir.join(skill_id);
             if src_dir.exists() {
+                let discovered = scan_skill_root(skill_id, &src_dir)?;
+                if discovered.has_executable_content {
+                    let record = self.repo.get_skill_package(skill_id)?;
+                    let trusted = record.as_ref().is_some_and(|record| {
+                        record.trusted_commit.is_some()
+                            && record.trusted_commit == record.installed_commit
+                    });
+                    if !trusted {
+                        return Err(DomainError::Database(format!(
+                            "Skill Pack {skill_id} contains executable content and is not trusted"
+                        )));
+                    }
+                }
+                if dest_dir.exists() {
+                    fs::remove_dir_all(&dest_dir)
+                        .map_err(|e| DomainError::Database(e.to_string()))?;
+                }
                 self.copy_dir_all(&src_dir, &dest_dir)
                     .map_err(|e| DomainError::Database(format!("Failed to copy skill: {}", e)))?;
+                self.repo.save_project_skill(project_id, skill_id, true)?;
+                let commit = self
+                    .repo
+                    .get_skill_package(skill_id)?
+                    .and_then(|record| record.installed_commit);
+                self.repo.save_project_skill_state(
+                    project_id,
+                    skill_id,
+                    commit.as_deref(),
+                    "current",
+                )?;
             } else {
-                return Err(DomainError::Database(format!("Global skill directory not found: {:?}", src_dir)));
+                return Err(DomainError::Database(format!(
+                    "Global skill directory not found: {:?}",
+                    src_dir
+                )));
             }
         } else {
             // Delete folder under project path
             if dest_dir.exists() {
-                fs::remove_dir_all(&dest_dir)
-                    .map_err(|e| DomainError::Database(format!("Failed to remove skill directory: {}", e)))?;
+                fs::remove_dir_all(&dest_dir).map_err(|e| {
+                    DomainError::Database(format!("Failed to remove skill directory: {}", e))
+                })?;
             }
+            self.repo.save_project_skill(project_id, skill_id, false)?;
         }
 
         Ok(())
@@ -144,6 +728,9 @@ impl SkillService {
         for entry in fs::read_dir(src)? {
             let entry = entry?;
             let ty = entry.file_type()?;
+            if ty.is_symlink() {
+                continue;
+            }
             if ty.is_dir() {
                 self.copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
             } else {
@@ -152,4 +739,248 @@ impl SkillService {
         }
         Ok(())
     }
+}
+
+pub fn normalize_git_url(url: &str) -> DomainResult<String> {
+    let trimmed = url.trim().trim_end_matches('/');
+    let without_scheme = if let Some(value) = trimmed.strip_prefix("https://") {
+        value
+    } else if let Some(value) = trimmed.strip_prefix("http://") {
+        value
+    } else if let Some(value) = trimmed.strip_prefix("ssh://") {
+        value.trim_start_matches("git@")
+    } else if let Some(value) = trimmed.strip_prefix("git@") {
+        value
+    } else {
+        trimmed
+    };
+    let normalized = without_scheme
+        .replace(':', "/")
+        .trim_end_matches(".git")
+        .trim_end_matches('/')
+        .to_ascii_lowercase();
+    if normalized.split('/').count() < 3 || normalized.contains(char::is_whitespace) {
+        return Err(DomainError::Database("Invalid Git URL".into()));
+    }
+    Ok(normalized)
+}
+
+fn git_source(path: &Path) -> Option<SkillSourceInfo> {
+    if !path.join(".git").exists() {
+        return None;
+    }
+    let url = git_output(path, &["remote", "get-url", "origin"]);
+    let installed_commit = git_output(path, &["rev-parse", "HEAD"]);
+    let tracked_ref = git_output(path, &["symbolic-ref", "--short", "HEAD"])
+        .or_else(|| git_output(path, &["describe", "--tags", "--exact-match"]));
+    Some(SkillSourceInfo {
+        kind: SourceKind::Git,
+        url,
+        tracked_ref,
+        installed_commit,
+    })
+}
+
+fn inspection_from_discovered(
+    discovered: crate::application::skill_scanner::DiscoveredSkill,
+    recommended_ref: Option<String>,
+    duplicate_skill_id: Option<String>,
+) -> ImportInspection {
+    let member_count = if discovered.kind == SkillKind::Pack {
+        discovered.members.len()
+    } else {
+        1
+    };
+    ImportInspection {
+        name: discovered.metadata.name,
+        kind: discovered.kind,
+        member_count,
+        has_executable_content: discovered.has_executable_content,
+        warnings: discovered.warnings,
+        recommended_ref,
+        duplicate_skill_id,
+    }
+}
+
+fn package_record(id: &str, path: &Path, source: &SkillSourceInfo) -> SkillPackageRecord {
+    SkillPackageRecord {
+        skill_id: id.to_string(),
+        source_kind: source.kind,
+        source_url: source.url.clone(),
+        normalized_source: source
+            .url
+            .as_deref()
+            .and_then(|url| normalize_git_url(url).ok()),
+        tracked_ref: source.tracked_ref.clone(),
+        installed_commit: source
+            .installed_commit
+            .clone()
+            .or_else(|| Some(local_revision(path))),
+        trusted_commit: None,
+        last_checked_at: None,
+    }
+}
+
+fn local_revision(root: &Path) -> String {
+    let mut paths = Vec::new();
+    collect_revision_paths(root, &mut paths);
+    paths.sort();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    for path in paths {
+        path.strip_prefix(root).unwrap_or(&path).hash(&mut hasher);
+        if let Ok(metadata) = fs::metadata(&path) {
+            metadata.len().hash(&mut hasher);
+            if let Ok(modified) = metadata.modified() {
+                if let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH) {
+                    duration.as_nanos().hash(&mut hasher);
+                }
+            }
+        }
+    }
+    format!("local-{:016x}", hasher.finish())
+}
+
+fn collect_revision_paths(directory: &Path, paths: &mut Vec<PathBuf>) {
+    let Ok(entries) = fs::read_dir(directory) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
+        if file_type.is_symlink() || entry.file_name() == ".git" {
+            continue;
+        }
+        if file_type.is_dir() {
+            collect_revision_paths(&path, paths);
+        } else if file_type.is_file() {
+            paths.push(path);
+        }
+    }
+}
+
+fn git_output(path: &Path, args: &[&str]) -> Option<String> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(path)
+        .args(args)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let value = String::from_utf8(output.stdout).ok()?;
+    let trimmed = value.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+fn clone_repository(
+    url: &str,
+    tracked_ref: Option<&str>,
+    destination: &Path,
+) -> DomainResult<std::process::ExitStatus> {
+    let mut command = Command::new("git");
+    command.arg("clone").arg("--depth").arg("1");
+    if let Some(reference) = tracked_ref {
+        command.arg("--branch").arg(reference);
+    }
+    command
+        .arg(url)
+        .arg(destination)
+        .status()
+        .map_err(|error| DomainError::Database(format!("Git clone execution error: {error}")))
+}
+
+fn latest_stable_tag(url: &str) -> Option<String> {
+    let output = Command::new("git")
+        .args(["ls-remote", "--tags", "--refs", url])
+        .output()
+        .ok()?;
+    output.status.success().then_some(())?;
+    select_latest_stable_tag(&String::from_utf8(output.stdout).ok()?)
+}
+
+fn select_latest_stable_tag(refs: &str) -> Option<String> {
+    refs.lines()
+        .filter_map(|line| line.split_whitespace().nth(1))
+        .filter_map(|reference| reference.strip_prefix("refs/tags/"))
+        .filter_map(|tag| semantic_version(tag).map(|version| (version, tag.to_string())))
+        .max_by_key(|(version, _)| *version)
+        .map(|(_, tag)| tag)
+}
+
+fn semantic_version(tag: &str) -> Option<(u64, u64, u64)> {
+    let value = tag.strip_prefix('v').unwrap_or(tag);
+    if value.contains('-') || value.contains('+') {
+        return None;
+    }
+    let mut parts = value.split('.');
+    let version = (
+        parts.next()?.parse().ok()?,
+        parts.next()?.parse().ok()?,
+        parts.next()?.parse().ok()?,
+    );
+    parts.next().is_none().then_some(version)
+}
+
+fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
+    if !path.join(".git").exists() {
+        return Ok(false);
+    }
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(path)
+        .args(["status", "--porcelain"])
+        .output()
+        .map_err(|error| DomainError::Database(error.to_string()))?;
+    if !output.status.success() {
+        return Err(DomainError::Database(
+            "Unable to inspect Git worktree".into(),
+        ));
+    }
+    Ok(!output.stdout.is_empty())
+}
+
+fn trust_matches(
+    trusted_commit: Option<&str>,
+    installed_commit: Option<&str>,
+    dirty: bool,
+) -> bool {
+    !dirty && trusted_commit.is_some() && trusted_commit == installed_commit
+}
+
+fn remote_commit(url: &str, tracked_ref: &str) -> Option<String> {
+    let reference = if tracked_ref.starts_with("refs/") {
+        tracked_ref.to_string()
+    } else if semantic_version(tracked_ref).is_some() {
+        format!("refs/tags/{tracked_ref}")
+    } else {
+        format!("refs/heads/{tracked_ref}")
+    };
+    let mut command = Command::new("git");
+    command.args(["ls-remote", url, &reference]);
+    if reference.starts_with("refs/tags/") {
+        command.arg(format!("{reference}^{{}}"));
+    }
+    let output = command.output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8(output.stdout)
+        .ok()?
+        .lines()
+        .filter_map(|line| line.split_whitespace().next())
+        .next_back()
+        .map(ToString::to_string)
+}
+
+fn resolve_remote_target(url: &str, tracked_ref: &str) -> Option<(String, String)> {
+    let target_ref = if semantic_version(tracked_ref).is_some() {
+        latest_stable_tag(url).unwrap_or_else(|| tracked_ref.to_string())
+    } else {
+        tracked_ref.to_string()
+    };
+    let commit = remote_commit(url, &target_ref)?;
+    Some((target_ref, commit))
 }

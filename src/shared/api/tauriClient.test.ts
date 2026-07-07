@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: invokeMock,
 }));
 
-import { AppError, getHealth } from './tauriClient';
+import { AppError, checkSkillUpdates, getHealth, inspectSkillImport, trustSkill, updateSkill } from './tauriClient';
 
 describe('tauriClient', () => {
   beforeEach(() => {
@@ -46,6 +46,27 @@ describe('tauriClient', () => {
       code: 'database_unavailable',
       message: '本地数据库暂时不可用，请重试。',
       details: 'file is locked',
+    });
+  });
+
+  it('uses package lifecycle command payloads', async () => {
+    invokeMock.mockResolvedValue([]);
+    await checkSkillUpdates();
+    expect(invokeMock).toHaveBeenLastCalledWith('check_skill_updates');
+
+    invokeMock.mockResolvedValue({ skill_id: 'pack' });
+    await updateSkill('pack');
+    expect(invokeMock).toHaveBeenLastCalledWith('update_skill', { skillId: 'pack' });
+
+    invokeMock.mockResolvedValue(undefined);
+    await trustSkill('pack');
+    expect(invokeMock).toHaveBeenLastCalledWith('trust_skill', { skillId: 'pack' });
+
+    invokeMock.mockResolvedValue({ name: 'Pack', member_count: 5 });
+    await inspectSkillImport('https://github.com/example/pack', 'git');
+    expect(invokeMock).toHaveBeenLastCalledWith('inspect_skill_import', {
+      source: 'https://github.com/example/pack',
+      importType: 'git',
     });
   });
 });

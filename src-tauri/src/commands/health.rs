@@ -3,9 +3,9 @@ use tauri::State;
 
 use crate::application::health_service::HealthService;
 use crate::application::skill_service::SkillService;
-use crate::domain::ports::SkillRepository;
 use crate::commands::CommandError;
 use crate::domain::health::HealthReport;
+use crate::domain::ports::SkillRepository;
 
 pub struct AppState {
     pub health: HealthService,

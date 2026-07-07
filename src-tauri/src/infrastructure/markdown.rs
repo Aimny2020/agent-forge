@@ -1,8 +1,8 @@
-use serde::Deserialize;
-use yaml_front_matter::YamlFrontMatter;
-use pulldown_cmark::{Parser, Options, html};
 use crate::domain::error::{DomainError, DomainResult};
 use crate::domain::skill::SkillMetadata;
+use pulldown_cmark::{html, Options, Parser};
+use serde::Deserialize;
+use yaml_front_matter::YamlFrontMatter;
 
 #[derive(Deserialize)]
 struct FrontMatterRaw {
@@ -15,7 +15,7 @@ struct FrontMatterRaw {
 pub fn parse_skill_markdown(content: &str) -> DomainResult<(SkillMetadata, String)> {
     let document = YamlFrontMatter::parse::<FrontMatterRaw>(content)
         .map_err(|e| DomainError::Database(format!("Failed to parse Frontmatter: {}", e)))?;
-    
+
     let raw_meta = document.metadata;
     let metadata = SkillMetadata {
         name: raw_meta.name,
@@ -29,7 +29,7 @@ pub fn parse_skill_markdown(content: &str) -> DomainResult<(SkillMetadata, Strin
     options.insert(Options::ENABLE_TABLES);
     options.insert(Options::ENABLE_STRIKETHROUGH);
     let parser = Parser::new_ext(&markdown_body, options);
-    
+
     let mut html_output = String::new();
     html::push_html(&mut html_output, parser);
 

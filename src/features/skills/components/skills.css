@@ -11,6 +11,29 @@
   gap: var(--space-2);
 }
 
+.skills-toolbar__actions,
+.skill-card-tags,
+.package-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skills-toolbar__actions .button,
+.package-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.is-spinning {
+  animation: spin 0.8s linear infinite;
+}
+
 .search-input {
   border: 1px solid var(--color-outline);
   border-radius: 99px;
@@ -68,6 +91,18 @@
   border-radius: 99px;
 }
 
+.pack-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-primary-ink);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
 .skill-card-controls {
   display: flex;
   align-items: center;
@@ -80,7 +115,7 @@
   cursor: pointer;
 }
 
-.delete-btn {
+.delete-btn, .update-btn {
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -90,6 +125,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
+}
+
+.update-btn:hover {
+  color: var(--color-primary-ink);
+  background: var(--color-surface-soft);
 }
 
 .delete-btn:hover {
@@ -114,6 +154,34 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   height: 3.6rem;
+}
+
+.skill-state-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 1.5rem;
+  margin-bottom: var(--space-1);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--color-surface-soft);
+}
+
+.state-pill--update {
+  color: var(--color-primary-ink);
+}
+
+.state-pill--warning {
+  color: var(--color-danger);
 }
 
 .skill-card-footer {
@@ -189,6 +257,12 @@
   font-family: 'Hanken Grotesk', sans-serif;
 }
 
+.modal-subtitle {
+  margin: 3px 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
 .close-btn {
   border: 0;
   background: transparent;
@@ -219,6 +293,19 @@
 .modal-markdown-area h1 {
   margin-top: 0;
   font-family: 'Hanken Grotesk', sans-serif;
+}
+
+.member-back {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-primary-ink);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.empty-copy {
+  color: var(--color-muted);
 }
 
 .markdown-body {
@@ -282,6 +369,64 @@
   gap: var(--space-2);
   background: var(--color-canvas);
   overflow-y: auto;
+}
+
+.pack-members {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.pack-members__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pack-member {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pack-member span {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pack-member.is-active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+}
+
+.skill-warnings {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, var(--color-outline));
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-size: 0.75rem;
+}
+
+.skill-warnings p {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
 }
 
 .form-group {
@@ -369,4 +514,29 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.import-inspection {
+  padding: var(--space-2);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.import-inspection__title,
+.import-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.import-inspection p {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.import-inspection .import-warning,
+.import-error {
+  color: var(--color-danger);
 }

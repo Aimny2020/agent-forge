@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import {
+  AppError,
+  checkSkillUpdates,
   getSkills,
   getCategories,
   createCategory,
@@ -9,20 +11,24 @@ import {
   deleteCategory,
   updateSkillMeta,
   deleteSkill,
+  deleteSkillEverywhere,
   importSkill,
+  trustSkill,
+  updateSkill,
 } from '../../shared/api/tauriClient';
 import { SkillsSidebar } from './components/SkillsSidebar';
 import { SkillCard } from './components/SkillCard';
 import { SkillDetailModal } from './components/SkillDetailModal';
 import { ImportSkillModal } from './components/ImportSkillModal';
-import { Skill } from '../../shared/api/types';
+import { Skill, SkillMember } from '../../shared/api/types';
+import { projectCatalog } from './skillCatalog';
 import './components/skills.css';
 
 export function SkillsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [activeDetailSkill, setActiveDetailSkill] = useState<Skill | null>(null);
+  const [activeDetail, setActiveDetail] = useState<{ skill: Skill; member?: SkillMember } | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
 
   // Queries
@@ -36,6 +42,13 @@ export function SkillsPage() {
     queryFn: getCategories,
   });
 
+  const { data: skillUpdates = [], refetch: refetchUpdates, isFetching: updatesLoading } = useQuery({
+    queryKey: ['skill-updates'],
+    queryFn: checkSkillUpdates,
+    staleTime: 5 * 60 * 1000,
+  });
+  const updateStatus = new Map(skillUpdates.map((update) => [update.skill_id, update.status]));
+
   // Mutations
   const updateMetaMut = useMutation({
     mutationFn: ({ id, cat, notes }: { id: string; cat: string | null; notes: string | null }) =>
@@ -45,6 +58,31 @@ export function SkillsPage() {
 
   const deleteSkillMut = useMutation({
     mutationFn: deleteSkill,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
+    onError: (error, skillId) => {
+      if (error instanceof AppError && error.details?.includes('enabled in projects')) {
+        if (confirm('该扩展包正在被项目使用。是否从所有项目移除后卸载？')) {
+          deleteEverywhereMut.mutate(skillId);
+        }
+      }
+    },
+  });
+
+  const deleteEverywhereMut = useMutation({
+    mutationFn: deleteSkillEverywhere,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
+  });
+
+  const updateSkillMut = useMutation({
+    mutationFn: updateSkill,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-updates'] });
+    },
+  });
+
+  const trustSkillMut = useMutation({
+    mutationFn: trustSkill,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
   });
 
@@ -95,21 +133,7 @@ export function SkillsPage() {
   });
   skillsCountMap['uncategorized'] = uncategorizedCount;
 
-  // Filter skills
-  const filteredSkills = skills.filter((s) => {
-    // Category filter
-    if (selectedCategoryId === 'uncategorized' && s.category_id) return false;
-    if (selectedCategoryId !== null && selectedCategoryId !== 'uncategorized' && s.category_id !== selectedCategoryId) return false;
-    
-    // Search text filter
-    if (search.trim()) {
-      const query = search.toLowerCase();
-      const nameMatch = s.metadata.name.toLowerCase().includes(query);
-      const descMatch = s.metadata.description.toLowerCase().includes(query);
-      return nameMatch || descMatch;
-    }
-    return true;
-  });
+  const catalogResults = projectCatalog(skills, search, selectedCategoryId);
 
   const getCategoryName = (catId?: string) => {
     if (!catId) return '未分类';
@@ -145,30 +169,43 @@ export function SkillsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button className="button button--primary" onClick={() => setIsImportOpen(true)}>
-              <Plus size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              导入技能
-            </button>
+            <div className="skills-toolbar__actions">
+              <button className="button button--secondary" onClick={() => refetchUpdates()} disabled={updatesLoading}>
+                <RefreshCw size={16} className={updatesLoading ? 'is-spinning' : ''} />
+                检查更新
+              </button>
+              <button className="button button--primary" onClick={() => setIsImportOpen(true)}>
+                <Plus size={16} /> 导入技能
+              </button>
+            </div>
           </div>
 
-          {filteredSkills.length === 0 ? (
+          {catalogResults.length === 0 ? (
             <div className="page-state">
               <p>没有找到匹配的技能</p>
             </div>
           ) : (
             <div className="skills-cards-grid">
-              {filteredSkills.map((s) => (
+              {catalogResults.map((result) => (
                 <SkillCard
-                  key={s.id}
-                  skill={s}
-                  categoryName={getCategoryName(s.category_id)}
-                  onOpenDetail={() => setActiveDetailSkill(s)}
-                  onDelete={(e) => {
+                  key={result.type === 'member' ? result.member.id : result.skill.id}
+                  skill={result.skill}
+                  member={result.type === 'member' ? result.member : undefined}
+                  categoryName={getCategoryName(result.skill.category_id)}
+                  updateStatus={updateStatus.get(result.skill.id) ?? result.skill.update_status}
+                  onOpenDetail={() => setActiveDetail(result.type === 'member' ? { skill: result.skill, member: result.member } : { skill: result.skill })}
+                  onUpdate={result.skill.source.kind === 'git' ? (e) => {
                     e.stopPropagation();
-                    if (confirm(`确定要删除技能 "${s.metadata.name}" 吗？此操作物理删除本地文件且不可逆。`)) {
-                      deleteSkillMut.mutate(s.id);
+                    if (confirm(`更新 "${result.skill.metadata.name}"？所有未修改的项目副本也会同步。`)) {
+                      updateSkillMut.mutate(result.skill.id);
                     }
-                  }}
+                  } : undefined}
+                  onDelete={result.type === 'skill' ? (e) => {
+                    e.stopPropagation();
+                    if (confirm(`确定要删除 "${result.skill.metadata.name}" 吗？此操作不可逆。`)) {
+                      deleteSkillMut.mutate(result.skill.id);
+                    }
+                  } : undefined}
                 />
               ))}
             </div>
@@ -176,14 +213,18 @@ export function SkillsPage() {
         </main>
       </div>
 
-      {activeDetailSkill && (
+      {activeDetail && (
         <SkillDetailModal
-          skill={activeDetailSkill}
+          skill={activeDetail.skill}
+          initialMember={activeDetail.member}
           categories={categories}
-          onClose={() => setActiveDetailSkill(null)}
+          updateStatus={updateStatus.get(activeDetail.skill.id) ?? activeDetail.skill.update_status}
+          onClose={() => setActiveDetail(null)}
           onUpdate={(cat, notes) =>
-            updateMetaMut.mutate({ id: activeDetailSkill.id, cat, notes })
+            updateMetaMut.mutate({ id: activeDetail.skill.id, cat, notes })
           }
+          onTrust={() => trustSkillMut.mutate(activeDetail.skill.id)}
+          onInstallUpdate={() => updateSkillMut.mutate(activeDetail.skill.id)}
         />
       )}
 

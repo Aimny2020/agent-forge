@@ -1,7 +1,7 @@
-use tauri::State;
 use crate::commands::health::AppState;
 use crate::commands::CommandError;
 use crate::domain::project::Project;
+use tauri::State;
 
 #[tauri::command]
 pub async fn get_projects(state: State<'_, AppState>) -> Result<Vec<Project>, CommandError> {
@@ -30,7 +30,10 @@ pub async fn add_project(
         created_at,
     };
 
-    state.repo.create_project(&project).map_err(CommandError::from)?;
+    state
+        .repo
+        .create_project(&project)
+        .map_err(CommandError::from)?;
     Ok(project)
 }
 
@@ -45,9 +48,6 @@ pub async fn select_directory() -> Result<Option<String>, CommandError> {
 }
 
 #[tauri::command]
-pub async fn delete_project(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<(), CommandError> {
+pub async fn delete_project(state: State<'_, AppState>, id: String) -> Result<(), CommandError> {
     state.repo.delete_project(&id).map_err(CommandError::from)
 }

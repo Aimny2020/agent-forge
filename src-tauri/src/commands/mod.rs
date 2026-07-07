@@ -1,7 +1,6 @@
 pub mod health;
-pub mod skills;
 pub mod projects;
-
+pub mod skills;
 
 use crate::domain::error::DomainError;
 

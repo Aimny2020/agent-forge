@@ -21,15 +21,51 @@ pub trait SkillRepository: Send + Sync {
     fn create_project(&self, project: &crate::domain::project::Project) -> DomainResult<()>;
     fn delete_project(&self, id: &str) -> DomainResult<()>;
 
-    fn get_user_meta(&self, skill_id: &str) -> DomainResult<Option<crate::domain::skill::UserSkillMeta>>;
-    fn save_user_meta(&self, skill_id: &str, category_id: Option<&str>, user_notes: Option<&str>) -> DomainResult<()>;
+    fn get_user_meta(
+        &self,
+        skill_id: &str,
+    ) -> DomainResult<Option<crate::domain::skill::UserSkillMeta>>;
+    fn save_user_meta(
+        &self,
+        skill_id: &str,
+        category_id: Option<&str>,
+        user_notes: Option<&str>,
+    ) -> DomainResult<()>;
     fn delete_user_meta(&self, skill_id: &str) -> DomainResult<()>;
-    
+
+    fn get_skill_package(
+        &self,
+        skill_id: &str,
+    ) -> DomainResult<Option<crate::domain::skill::SkillPackageRecord>>;
+    fn save_skill_package(
+        &self,
+        record: &crate::domain::skill::SkillPackageRecord,
+    ) -> DomainResult<()>;
+    fn find_skill_by_source(&self, source_url: &str) -> DomainResult<Option<String>>;
+
     fn get_project_skills(&self, project_id: &str) -> DomainResult<Vec<String>>;
-    fn save_project_skill(&self, project_id: &str, skill_id: &str, enabled: bool) -> DomainResult<()>;
+    fn save_project_skill(
+        &self,
+        project_id: &str,
+        skill_id: &str,
+        enabled: bool,
+    ) -> DomainResult<()>;
+    fn get_projects_using_skill(&self, skill_id: &str) -> DomainResult<Vec<String>>;
+    fn save_project_skill_state(
+        &self,
+        project_id: &str,
+        skill_id: &str,
+        installed_commit: Option<&str>,
+        sync_state: &str,
+    ) -> DomainResult<()>;
 
     fn get_categories(&self) -> DomainResult<Vec<crate::domain::skill::Category>>;
-    fn create_category(&self, id: &str, name: &str, created_at: &str) -> DomainResult<crate::domain::skill::Category>;
+    fn create_category(
+        &self,
+        id: &str,
+        name: &str,
+        created_at: &str,
+    ) -> DomainResult<crate::domain::skill::Category>;
     fn rename_category(&self, id: &str, name: &str) -> DomainResult<()>;
     fn delete_category(&self, id: &str) -> DomainResult<()>;
 }
