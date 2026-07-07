@@ -617,7 +617,7 @@ impl SkillService {
         for project_id in self.repo.get_projects_using_skill(skill_id)? {
             if let Some(project_path) = self.repo.get_project_path(&project_id)? {
                 let destination = Path::new(&project_path)
-                    .join(".agent")
+                    .join(".agents")
                     .join("skills")
                     .join(skill_id);
                 let modified = destination.exists()
@@ -702,8 +702,8 @@ impl SkillService {
         };
         let project_path = Path::new(&project_path_str);
 
-        // 3. Define target .agent/skills/<skill_id> folder
-        let dest_dir = project_path.join(".agent").join("skills").join(skill_id);
+        // 3. Define target .agents/skills/<skill_id> folder
+        let dest_dir = project_path.join(".agents").join("skills").join(skill_id);
 
         if enabled {
             let src_dir = self.skills_dir.join(skill_id);
