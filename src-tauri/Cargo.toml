@@ -2,7 +2,7 @@
 name = "agentforge"
 version = "0.1.0"
 description = "Local AI engineering workbench"
-authors = ["AgentForge contributors"]
+authors = ["Aimny2020"]
 edition = "2021"
 
 [lib]
@@ -24,6 +24,5 @@ chrono = { version = "0.4", features = ["serde"] }
 dirs = "5"
 uuid = { version = "1.0", features = ["v4"] }
 rfd = { version = "0.15", default-features = false, features = ["tokio"] }
-
 
 

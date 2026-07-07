@@ -206,7 +206,7 @@ mod tests {
         let dst = fixture.0.join("dst");
         fs::create_dir_all(&src).unwrap();
         fs::write(src.join("SKILL.md"), "hello").unwrap();
-        
+
         let git_dir = src.join(".git");
         fs::create_dir_all(&git_dir).unwrap();
         fs::write(git_dir.join("config"), "git-config").unwrap();
@@ -222,7 +222,8 @@ mod tests {
         fs::create_dir_all(&nested_git).unwrap();
         fs::write(nested_git.join("nested-config"), "nested-git").unwrap();
 
-        let service = SkillService::with_skills_dir(Arc::new(EmptyRepository::default()), fixture.0.clone());
+        let service =
+            SkillService::with_skills_dir(Arc::new(EmptyRepository::default()), fixture.0.clone());
         service.copy_dir_all(&src, &dst).unwrap();
 
         assert!(dst.join("SKILL.md").exists());

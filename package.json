@@ -8,6 +8,8 @@
     "build": "tsc && vite build",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:version": "node --test scripts/check-version.test.mjs",
+    "version:check": "node scripts/check-version.mjs",
     "lint": "tsc --noEmit",
     "tauri": "tauri",
     "tauri:dev": "tauri dev"
