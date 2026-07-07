@@ -4,8 +4,8 @@ import { SkillDetailModal } from './SkillDetailModal';
 import type { Skill, Category } from '../../../shared/api/types';
 
 const mockCategories: Category[] = [
-  { id: '1', name: 'Design' },
-  { id: '2', name: 'Development' },
+  { id: '1', name: 'Design', created_at: '2026-07-06T00:00:00Z' },
+  { id: '2', name: 'Development', created_at: '2026-07-06T00:00:00Z' },
 ];
 
 const mockSkillPack: Skill = {
@@ -33,7 +33,7 @@ const mockSkillPack: Skill = {
     },
   ],
   source: { kind: 'git', url: 'https://github.com/example/taste-skill', installed_commit: 'abcdef123' },
-  update_status: 'none',
+  update_status: 'current',
   has_executable_content: false,
   trusted: true,
   warnings: [],
