@@ -26,8 +26,6 @@ export function SkillDetailModal({
   const [notes, setNotes] = useState(skill.user_notes || '');
   const [catId, setCatId] = useState(skill.category_id || '');
   const [selectedMember, setSelectedMember] = useState<SkillMember | undefined>(initialMember);
-  const activeMetadata = selectedMember?.metadata ?? skill.metadata;
-  const activeHtml = selectedMember?.html_content ?? skill.html_content;
 
   const handleSave = () => {
     onUpdate(catId || null, notes || null);
@@ -45,30 +43,58 @@ export function SkillDetailModal({
         </div>
         <div className="modal-grid-content">
           <div className="modal-markdown-area">
-            {selectedMember && <button className="member-back" onClick={() => setSelectedMember(undefined)}>← 返回 {skill.metadata.name}</button>}
-            <h1>{activeMetadata.name}</h1>
-            <div
-              className="markdown-body"
-              dangerouslySetInnerHTML={{ __html: activeHtml }}
-            />
-            {!activeHtml && skill.kind === 'pack' && <p className="empty-copy">从右侧选择一个子 Skill 查看完整说明。</p>}
+            {selectedMember ? (
+              <>
+                <button className="member-back" onClick={() => setSelectedMember(undefined)}>
+                  ← 返回 {skill.metadata.name}
+                </button>
+                <h1>{selectedMember.metadata.name}</h1>
+                <div
+                  className="markdown-body"
+                  dangerouslySetInnerHTML={{ __html: selectedMember.html_content || '<p>暂无文档说明</p>' }}
+                />
+              </>
+            ) : (
+              <>
+                <h1>{skill.metadata.name}</h1>
+                {skill.html_content && (
+                  <div
+                    className="markdown-body"
+                    dangerouslySetInnerHTML={{ __html: skill.html_content }}
+                  />
+                )}
+                {skill.kind === 'pack' && (
+                  <div className="pack-members-section">
+                    <h3 className="section-title" style={{ marginTop: '2rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-outline)', paddingBottom: '0.5rem' }}>
+                      所含子技能 ({skill.members.length})
+                    </h3>
+                    <div className="pack-members-grid">
+                      {skill.members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="pack-member-card"
+                          onClick={() => setSelectedMember(member)}
+                        >
+                          <div className="pack-member-card__header">
+                            <Package size={16} className="pack-member-card__icon" />
+                            <h4>{member.metadata.name}</h4>
+                          </div>
+                          <p className="pack-member-card__desc">{member.metadata.description || '暂无描述信息'}</p>
+                          <div className="pack-member-card__footer">
+                            <span className="pack-member-card__version">
+                              {member.metadata.version ? `v${member.metadata.version}` : ''}
+                            </span>
+                            <span className="pack-member-card__action">查看详情 →</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <div className="modal-meta-editor">
-            {skill.kind === 'pack' && (
-              <div className="pack-members">
-                <div className="pack-members__heading"><Package size={15} />{skill.members.length} 个 Skills</div>
-                {skill.members.map((member) => (
-                  <button
-                    key={member.id}
-                    className={selectedMember?.id === member.id ? 'pack-member is-active' : 'pack-member'}
-                    onClick={() => setSelectedMember(member)}
-                  >
-                    <strong>{member.metadata.name}</strong>
-                    <span>{member.metadata.description}</span>
-                  </button>
-                ))}
-              </div>
-            )}
             <div className="package-actions">
               {updateStatus === 'available' && onInstallUpdate && (
                 <button className="button button--secondary" onClick={onInstallUpdate}>
