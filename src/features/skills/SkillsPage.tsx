@@ -153,11 +153,12 @@ export function SkillsPage() {
 
   return (
     <div className="page-stack">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">CAPABILITY CATALOG</p>
-          <h1>Skills 管理</h1>
-          <p className="page-description">管理全局 AI 技能，自定义分类并将其启用至平台。</p>
+      <header className="page-header" style={{ minHeight: 'auto', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap' }}>
+          <h1 style={{ fontSize: '1.75rem', lineHeight: 1 }}>Skills 管理</h1>
+          <span style={{ color: 'var(--color-muted)', fontSize: '0.85rem' }}>
+            管理全局 AI 技能，自定义分类并将其启用至平台。
+          </span>
         </div>
       </header>
 
