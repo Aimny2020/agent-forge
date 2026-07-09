@@ -324,10 +324,22 @@ mod tests {
     #[test]
     fn generates_correct_git_skill_ids() {
         use super::generate_git_skill_id;
-        assert_eq!(generate_git_skill_id("github.com/mattpocock/skills").unwrap(), "mattpocock-skills");
-        assert_eq!(generate_git_skill_id("github.com/axtonliu/axton-obsidian-visual-skills").unwrap(), "axtonliu-axton-obsidian-visual-skills");
-        assert_eq!(generate_git_skill_id("github.com/org/Name-With_special-Chars!!").unwrap(), "org-name-with-special-chars");
-        assert_eq!(generate_git_skill_id("github.com/org/---consecutive---dashes---").unwrap(), "org-consecutive-dashes");
+        assert_eq!(
+            generate_git_skill_id("github.com/mattpocock/skills").unwrap(),
+            "mattpocock-skills"
+        );
+        assert_eq!(
+            generate_git_skill_id("github.com/axtonliu/axton-obsidian-visual-skills").unwrap(),
+            "axtonliu-axton-obsidian-visual-skills"
+        );
+        assert_eq!(
+            generate_git_skill_id("github.com/org/Name-With_special-Chars!!").unwrap(),
+            "org-name-with-special-chars"
+        );
+        assert_eq!(
+            generate_git_skill_id("github.com/org/---consecutive---dashes---").unwrap(),
+            "org-consecutive-dashes"
+        );
     }
 
     #[test]
@@ -343,11 +355,11 @@ mod tests {
 
     #[test]
     fn integrates_git_skill_migration_on_service_startup() {
-        use crate::infrastructure::database::SqliteDatabase;
         use crate::domain::skill::SkillPackageRecord;
-        
+        use crate::infrastructure::database::SqliteDatabase;
+
         let db = Arc::new(SqliteDatabase::open_in_memory().unwrap());
-        
+
         // Save old record
         let record = SkillPackageRecord {
             skill_id: "skills".into(),
@@ -360,23 +372,30 @@ mod tests {
             last_checked_at: Some("2026-07-09T00:00:00Z".into()),
         };
         db.save_skill_package(&record).unwrap();
-        
+
         let fixture = Fixture::new();
         // Create old skills folder
         let old_folder = fixture.0.join("skills");
         fs::create_dir_all(&old_folder).unwrap();
-        fs::write(old_folder.join("SKILL.md"), "---\nname: mattpocock-skills\ndescription: desc\n---\n").unwrap();
-        
+        fs::write(
+            old_folder.join("SKILL.md"),
+            "---\nname: mattpocock-skills\ndescription: desc\n---\n",
+        )
+        .unwrap();
+
         // Instantiate service to run migration on startup
         let _service = SkillService::with_skills_dir(db.clone(), fixture.0.clone());
-        
+
         // Verify folder is renamed
         assert!(!old_folder.exists());
         assert!(fixture.0.join("mattpocock-skills").exists());
-        
+
         // Verify DB record is migrated
         let new_record = db.get_skill_package("mattpocock-skills").unwrap().unwrap();
-        assert_eq!(new_record.normalized_source.as_deref(), Some("github.com/mattpocock/skills"));
+        assert_eq!(
+            new_record.normalized_source.as_deref(),
+            Some("github.com/mattpocock/skills")
+        );
         assert!(db.get_skill_package("skills").unwrap().is_none());
     }
 
@@ -384,7 +403,8 @@ mod tests {
     fn manages_project_skills_json_dynamically() {
         let fixture = Fixture::new();
         // Create project and fake skill pack
-        let db = Arc::new(crate::infrastructure::database::SqliteDatabase::open_in_memory().unwrap());
+        let db =
+            Arc::new(crate::infrastructure::database::SqliteDatabase::open_in_memory().unwrap());
         let project = crate::domain::project::Project {
             id: "p1".into(),
             name: "Project 1".into(),
@@ -396,10 +416,21 @@ mod tests {
         // Put a fake pack in global skills dir
         let pack_dir = fixture.0.join("obra-superpowers");
         fs::create_dir_all(pack_dir.join("skills").join("brainstorming")).unwrap();
-        fs::write(pack_dir.join("skills").join("brainstorming").join("SKILL.md"), "---\nname: Brainstorming\ndescription: desc\n---\n").unwrap();
+        fs::write(
+            pack_dir
+                .join("skills")
+                .join("brainstorming")
+                .join("SKILL.md"),
+            "---\nname: Brainstorming\ndescription: desc\n---\n",
+        )
+        .unwrap();
         // Make sure it scans as pack (needs > 1 definition)
         fs::create_dir_all(pack_dir.join("skills").join("executing")).unwrap();
-        fs::write(pack_dir.join("skills").join("executing").join("SKILL.md"), "---\nname: Executing\ndescription: desc\n---\n").unwrap();
+        fs::write(
+            pack_dir.join("skills").join("executing").join("SKILL.md"),
+            "---\nname: Executing\ndescription: desc\n---\n",
+        )
+        .unwrap();
 
         // Save provenance
         let record = crate::domain::skill::SkillPackageRecord {
@@ -417,7 +448,9 @@ mod tests {
         let service = SkillService::with_skills_dir(db.clone(), fixture.0.clone());
 
         // Toggle sub-skill brainstorming
-        service.toggle_project_skill("p1", "obra-superpowers::skills/brainstorming", true).unwrap();
+        service
+            .toggle_project_skill("p1", "obra-superpowers::skills/brainstorming", true)
+            .unwrap();
 
         // Verify skills.json is created
         let json_path = fixture.0.join(".agents").join("skills.json");
@@ -426,19 +459,25 @@ mod tests {
         assert!(content.contains(".agents/skills/obra-superpowers/skills/brainstorming"));
 
         // Toggle executing plan as well
-        service.toggle_project_skill("p1", "obra-superpowers::skills/executing", true).unwrap();
+        service
+            .toggle_project_skill("p1", "obra-superpowers::skills/executing", true)
+            .unwrap();
         let content2 = fs::read_to_string(&json_path).unwrap();
         assert!(content2.contains(".agents/skills/obra-superpowers/skills/brainstorming"));
         assert!(content2.contains(".agents/skills/obra-superpowers/skills/executing"));
 
         // Disable brainstorming
-        service.toggle_project_skill("p1", "obra-superpowers::skills/brainstorming", false).unwrap();
+        service
+            .toggle_project_skill("p1", "obra-superpowers::skills/brainstorming", false)
+            .unwrap();
         let content3 = fs::read_to_string(&json_path).unwrap();
         assert!(!content3.contains(".agents/skills/obra-superpowers/skills/brainstorming"));
         assert!(content3.contains(".agents/skills/obra-superpowers/skills/executing"));
 
         // Disable executing
-        service.toggle_project_skill("p1", "obra-superpowers::skills/executing", false).unwrap();
+        service
+            .toggle_project_skill("p1", "obra-superpowers::skills/executing", false)
+            .unwrap();
         // Since no more custom skills are enabled, skills.json should be cleaned up and deleted
         assert!(!json_path.exists());
     }
@@ -613,7 +652,13 @@ impl SkillService {
                 .and_then(|name| name.to_str())
                 .ok_or_else(|| DomainError::Database("Invalid folder name".into()))?;
             let discovered = scan_skill_root(id, path)?;
-            return Ok(inspection_from_discovered(discovered, None, None, id.to_string(), None));
+            return Ok(inspection_from_discovered(
+                discovered,
+                None,
+                None,
+                id.to_string(),
+                None,
+            ));
         }
 
         let normalized = normalize_git_url(source)?;
@@ -632,9 +677,9 @@ impl SkillService {
         }
         let install_id = self.resolve_git_skill_id(&normalized)?;
         let recommended_ref = latest_stable_tag(source);
-        let staging = self
-            .skills_dir
-            .join(format!(".{}-inspect-{}", install_id, uuid::Uuid::new_v4()));
+        let staging =
+            self.skills_dir
+                .join(format!(".{}-inspect-{}", install_id, uuid::Uuid::new_v4()));
         let status = clone_repository(source, recommended_ref.as_deref(), &staging)?;
         if !status.success() {
             let _ = fs::remove_dir_all(&staging);
@@ -642,8 +687,15 @@ impl SkillService {
                 "git clone command exited with error".into(),
             ));
         }
-        let result = scan_skill_root(&install_id, &staging)
-            .map(|discovered| inspection_from_discovered(discovered, recommended_ref, None, install_id, Some(normalized)));
+        let result = scan_skill_root(&install_id, &staging).map(|discovered| {
+            inspection_from_discovered(
+                discovered,
+                recommended_ref,
+                None,
+                install_id,
+                Some(normalized),
+            )
+        });
         let _ = fs::remove_dir_all(&staging);
         result
     }
@@ -662,9 +714,9 @@ impl SkillService {
                 "Skill {install_id} is already installed"
             )));
         }
-        let staging = self
-            .skills_dir
-            .join(format!(".{}-import-{}", install_id, uuid::Uuid::new_v4()));
+        let staging =
+            self.skills_dir
+                .join(format!(".{}-import-{}", install_id, uuid::Uuid::new_v4()));
         let stable_tag = latest_stable_tag(url);
         let status = clone_repository(url, stable_tag.as_deref(), &staging)?;
 
@@ -1084,7 +1136,7 @@ impl SkillService {
                 )));
             }
         }
-        
+
         self.update_project_skills_json(project_path, project_id)?;
         Ok(())
     }
@@ -1399,18 +1451,24 @@ fn generate_git_skill_id(normalized: &str) -> DomainResult<String> {
     }
     let owner = parts[parts.len() - 2];
     let repo = parts[parts.len() - 1];
-    
+
     let clean = |s: &str| {
         s.chars()
-            .map(|c| if c.is_alphanumeric() || c == '-' { c } else { '-' })
+            .map(|c| {
+                if c.is_alphanumeric() || c == '-' {
+                    c
+                } else {
+                    '-'
+                }
+            })
             .collect::<String>()
             .to_ascii_lowercase()
     };
-    
+
     let owner_clean = clean(owner);
     let repo_clean = clean(repo);
     let combined = format!("{}-{}", owner_clean, repo_clean);
-    
+
     let mut compressed = String::new();
     let mut last_was_dash = false;
     for c in combined.chars() {
@@ -1445,13 +1503,15 @@ fn stable_hash(s: &str) -> String {
 impl SkillService {
     fn resolve_git_skill_id(&self, normalized: &str) -> DomainResult<String> {
         let base_id = generate_git_skill_id(normalized)?;
-        
+
         let path = self.skills_dir.join(&base_id);
         if path.exists() || self.repo.get_skill_package(&base_id)?.is_some() {
             let existing = self.repo.get_skill_package(&base_id)?;
-            let is_same_source = existing.as_ref()
-                .and_then(|r| r.normalized_source.as_deref()) == Some(normalized);
-            
+            let is_same_source = existing
+                .as_ref()
+                .and_then(|r| r.normalized_source.as_deref())
+                == Some(normalized);
+
             if is_same_source {
                 Ok(base_id)
             } else {
@@ -1463,16 +1523,24 @@ impl SkillService {
         }
     }
 
-    fn generate_new_skill_id_for_migration(&self, old_id: &str, normalized: &str) -> DomainResult<String> {
+    fn generate_new_skill_id_for_migration(
+        &self,
+        old_id: &str,
+        normalized: &str,
+    ) -> DomainResult<String> {
         let base_new_id = generate_git_skill_id(normalized)?;
         let mut final_new_id = base_new_id.clone();
-        
+
         let dest_base = self.skills_dir.join(&final_new_id);
-        if (dest_base.exists() || self.repo.get_skill_package(&final_new_id)?.is_some()) && final_new_id != old_id {
+        if (dest_base.exists() || self.repo.get_skill_package(&final_new_id)?.is_some())
+            && final_new_id != old_id
+        {
             let existing_rec = self.repo.get_skill_package(&final_new_id)?;
-            let is_same_source = existing_rec.as_ref()
-                .and_then(|r| r.normalized_source.as_deref()) == Some(normalized);
-            
+            let is_same_source = existing_rec
+                .as_ref()
+                .and_then(|r| r.normalized_source.as_deref())
+                == Some(normalized);
+
             if is_same_source {
                 return Err(DomainError::Database(format!(
                     "Migration conflict: both {} and {} exist for normalized source {}",
@@ -1483,7 +1551,7 @@ impl SkillService {
                 final_new_id = format!("{}-{}", base_new_id, suffix);
             }
         }
-        
+
         if final_new_id != old_id {
             let final_dest = self.skills_dir.join(&final_new_id);
             if final_dest.exists() || self.repo.get_skill_package(&final_new_id)?.is_some() {
@@ -1493,22 +1561,23 @@ impl SkillService {
                 )));
             }
         }
-        
+
         Ok(final_new_id)
     }
 
     fn migrate_single_skill(&self, old_id: &str, new_id: &str) -> DomainResult<()> {
         let old_path = self.skills_dir.join(old_id);
         let new_path = self.skills_dir.join(new_id);
-        
+
         let renamed_fs = if old_path.exists() && old_path.is_dir() {
-            fs::rename(&old_path, &new_path)
-                .map_err(|e| DomainError::Database(format!("Failed to rename skill folder: {}", e)))?;
+            fs::rename(&old_path, &new_path).map_err(|e| {
+                DomainError::Database(format!("Failed to rename skill folder: {}", e))
+            })?;
             true
         } else {
             false
         };
-        
+
         let db_result = self.repo.migrate_git_skill_id(old_id, new_id);
         if db_result.is_err() {
             if renamed_fs {
@@ -1516,7 +1585,7 @@ impl SkillService {
             }
             return db_result;
         }
-        
+
         Ok(())
     }
 
@@ -1524,46 +1593,50 @@ impl SkillService {
         if !self.skills_dir.exists() {
             return Ok(());
         }
-        
-        let entries = fs::read_dir(&self.skills_dir)
-            .map_err(|e| DomainError::Database(e.to_string()))?;
-            
+
+        let entries =
+            fs::read_dir(&self.skills_dir).map_err(|e| DomainError::Database(e.to_string()))?;
+
         for entry in entries {
             let entry = entry.map_err(|e| DomainError::Database(e.to_string()))?;
             let path = entry.path();
             if !path.is_dir() {
                 continue;
             }
-            
+
             let old_id = match path.file_name().and_then(|s| s.to_str()) {
                 Some(name) => name,
                 None => continue,
             };
-            
+
             let record = match self.repo.get_skill_package(old_id)? {
                 Some(r) => r,
                 None => continue,
             };
-            
+
             if record.source_kind != SourceKind::Git {
                 continue;
             }
-            
+
             let normalized = match record.normalized_source.as_deref() {
                 Some(url) => url,
                 None => continue,
             };
-            
+
             let new_id = self.generate_new_skill_id_for_migration(old_id, normalized)?;
             if new_id != old_id {
                 self.migrate_single_skill(old_id, &new_id)?;
             }
         }
-        
+
         Ok(())
     }
 
-    fn update_project_skills_json(&self, project_path: &Path, project_id: &str) -> DomainResult<()> {
+    fn update_project_skills_json(
+        &self,
+        project_path: &Path,
+        project_id: &str,
+    ) -> DomainResult<()> {
         let enabled_skills = self.repo.get_project_skills(project_id)?;
         let mut custom_paths = Vec::new();
         for skill_id in enabled_skills {
@@ -1574,9 +1647,9 @@ impl SkillService {
                 custom_paths.push(format!(".agents/skills/{}/{}", pack_id, sub_path));
             }
         }
-        
+
         let skills_json_path = project_path.join(".agents").join("skills.json");
-        
+
         #[derive(Debug, serde::Serialize, serde::Deserialize, Default)]
         struct SkillsJsonEntry {
             path: String,
@@ -1591,21 +1664,20 @@ impl SkillService {
             #[serde(default, skip_serializing_if = "Vec::is_empty")]
             exclude: Vec<String>,
         }
-        
+
         let mut config = if skills_json_path.exists() {
             let content = fs::read_to_string(&skills_json_path)
                 .map_err(|e| DomainError::Database(format!("Failed to read skills.json: {}", e)))?;
-            serde_json::from_str::<SkillsJson>(&content)
-                .unwrap_or_default()
+            serde_json::from_str::<SkillsJson>(&content).unwrap_or_default()
         } else {
             SkillsJson::default()
         };
-        
+
         config.entries = custom_paths
             .into_iter()
             .map(|path| SkillsJsonEntry { path })
             .collect();
-            
+
         if config.entries.is_empty() && config.inherits.is_empty() && config.exclude.is_empty() {
             if skills_json_path.exists() {
                 let _ = fs::remove_file(&skills_json_path);
@@ -1613,15 +1685,18 @@ impl SkillService {
         } else {
             let agents_dir = project_path.join(".agents");
             if !agents_dir.exists() {
-                fs::create_dir_all(&agents_dir)
-                    .map_err(|e| DomainError::Database(format!("Failed to create .agents directory: {}", e)))?;
+                fs::create_dir_all(&agents_dir).map_err(|e| {
+                    DomainError::Database(format!("Failed to create .agents directory: {}", e))
+                })?;
             }
-            let content = serde_json::to_string_pretty(&config)
-                .map_err(|e| DomainError::Database(format!("Failed to serialize skills.json: {}", e)))?;
-            fs::write(&skills_json_path, content)
-                .map_err(|e| DomainError::Database(format!("Failed to write skills.json: {}", e)))?;
+            let content = serde_json::to_string_pretty(&config).map_err(|e| {
+                DomainError::Database(format!("Failed to serialize skills.json: {}", e))
+            })?;
+            fs::write(&skills_json_path, content).map_err(|e| {
+                DomainError::Database(format!("Failed to write skills.json: {}", e))
+            })?;
         }
-        
+
         Ok(())
     }
 }
