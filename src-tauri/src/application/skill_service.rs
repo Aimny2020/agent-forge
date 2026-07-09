@@ -1,8 +1,11 @@
 use std::fs;
-use std::hash::{Hash, Hasher};
+use std::hash::Hasher;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
+
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 use crate::application::skill_scanner::scan_skill_root;
 use crate::domain::error::{DomainError, DomainResult};
@@ -309,6 +312,24 @@ mod tests {
         assert!(trust_matches(Some("abc"), Some("abc"), false));
         assert!(!trust_matches(Some("abc"), Some("abc"), true));
         assert!(!trust_matches(Some("abc"), Some("def"), false));
+    }
+
+    #[test]
+    fn local_revision_normalizes_line_endings() {
+        use super::local_revision;
+        let fixture_lf = Fixture::new();
+        let path_lf = fixture_lf.0.join("skill-lf");
+        fs::create_dir_all(&path_lf).unwrap();
+        fs::write(path_lf.join("SKILL.md"), "line1\nline2\n").unwrap();
+        let hash_lf = local_revision(&path_lf);
+
+        let fixture_crlf = Fixture::new();
+        let path_crlf = fixture_crlf.0.join("skill-crlf");
+        fs::create_dir_all(&path_crlf).unwrap();
+        fs::write(path_crlf.join("SKILL.md"), "line1\r\nline2\r\n").unwrap();
+        let hash_crlf = local_revision(&path_crlf);
+
+        assert_eq!(hash_lf, hash_crlf);
     }
 
     fn run_git(path: &std::path::Path, args: &[&str]) {
@@ -1278,18 +1299,23 @@ fn package_record(id: &str, path: &Path, source: &SkillSourceInfo) -> SkillPacka
 }
 
 fn local_revision(root: &Path) -> String {
+    use std::hash::Hash;
     let mut paths = Vec::new();
     collect_revision_paths(root, &mut paths);
     paths.sort();
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     for path in paths {
-        path.strip_prefix(root).unwrap_or(&path).hash(&mut hasher);
-        if let Ok(metadata) = fs::metadata(&path) {
-            metadata.len().hash(&mut hasher);
-            if let Ok(modified) = metadata.modified() {
-                if let Ok(duration) = modified.duration_since(std::time::UNIX_EPOCH) {
-                    duration.as_nanos().hash(&mut hasher);
-                }
+        if let Ok(rel_path) = path.strip_prefix(root) {
+            rel_path.to_string_lossy().replace('\\', "/").hash(&mut hasher);
+        } else {
+            path.to_string_lossy().replace('\\', "/").hash(&mut hasher);
+        }
+        if let Ok(content) = fs::read(&path) {
+            if let Ok(text) = std::str::from_utf8(&content) {
+                let normalized = text.replace("\r\n", "\n");
+                normalized.hash(&mut hasher);
+            } else {
+                content.hash(&mut hasher);
             }
         }
     }
@@ -1317,12 +1343,12 @@ fn collect_revision_paths(directory: &Path, paths: &mut Vec<PathBuf>) {
 }
 
 fn git_output(path: &Path, args: &[&str]) -> Option<String> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(path)
-        .args(args)
-        .output()
-        .ok()?;
+    let mut command = Command::new("git");
+    command.arg("-C").arg(path).args(args);
+    #[cfg(target_os = "windows")]
+    command.creation_flags(0x08000000);
+
+    let output = command.output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -1341,18 +1367,22 @@ fn clone_repository(
     if let Some(reference) = tracked_ref {
         command.arg("--branch").arg(reference);
     }
+    command.arg(url).arg(destination);
+    #[cfg(target_os = "windows")]
+    command.creation_flags(0x08000000);
+
     command
-        .arg(url)
-        .arg(destination)
         .status()
         .map_err(|error| DomainError::Database(format!("Git clone execution error: {error}")))
 }
 
 fn latest_stable_tag(url: &str) -> Option<String> {
-    let output = Command::new("git")
-        .args(["ls-remote", "--tags", "--refs", url])
-        .output()
-        .ok()?;
+    let mut command = Command::new("git");
+    command.args(["ls-remote", "--tags", "--refs", url]);
+    #[cfg(target_os = "windows")]
+    command.creation_flags(0x08000000);
+
+    let output = command.output().ok()?;
     output.status.success().then_some(())?;
     select_latest_stable_tag(&String::from_utf8(output.stdout).ok()?)
 }
@@ -1384,18 +1414,54 @@ fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
     if !path.join(".git").exists() {
         return Ok(false);
     }
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(path)
-        .args(["status", "--porcelain"])
-        .output()
-        .map_err(|error| DomainError::Database(error.to_string()))?;
+
+    // Check if there are real modifications ignoring CR/LF differences
+    let mut cmd1 = Command::new("git");
+    cmd1.arg("-C").arg(path).args(["diff", "--quiet", "--ignore-cr-at-eol"]);
+    #[cfg(target_os = "windows")]
+    cmd1.creation_flags(0x08000000);
+
+    let has_changes = match cmd1.status() {
+        Ok(status) => !status.success(),
+        Err(error) => return Err(DomainError::Database(error.to_string())),
+    };
+
+    if has_changes {
+        return Ok(true);
+    }
+
+    // Also check if there are staged differences
+    let mut cmd2 = Command::new("git");
+    cmd2.arg("-C").arg(path).args(["diff", "--cached", "--quiet", "--ignore-cr-at-eol"]);
+    #[cfg(target_os = "windows")]
+    cmd2.creation_flags(0x08000000);
+
+    let has_staged_changes = match cmd2.status() {
+        Ok(status) => !status.success(),
+        Err(error) => return Err(DomainError::Database(error.to_string())),
+    };
+
+    if has_staged_changes {
+        return Ok(true);
+    }
+
+    // Now check for untracked files (excluding ignored ones)
+    let mut cmd3 = Command::new("git");
+    cmd3.arg("-C").arg(path).args(["status", "--porcelain"]);
+    #[cfg(target_os = "windows")]
+    cmd3.creation_flags(0x08000000);
+
+    let output = cmd3.output().map_err(|error| DomainError::Database(error.to_string()))?;
     if !output.status.success() {
         return Err(DomainError::Database(
             "Unable to inspect Git worktree".into(),
         ));
     }
-    Ok(!output.stdout.is_empty())
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Only count lines starting with "??" (untracked files)
+    let has_untracked = stdout.lines().any(|line| line.starts_with("??"));
+
+    Ok(has_untracked)
 }
 
 fn trust_matches(
@@ -1419,6 +1485,9 @@ fn remote_commit(url: &str, tracked_ref: &str) -> Option<String> {
     if reference.starts_with("refs/tags/") {
         command.arg(format!("{reference}^{{}}"));
     }
+    #[cfg(target_os = "windows")]
+    command.creation_flags(0x08000000);
+
     let output = command.output().ok()?;
     if !output.status.success() {
         return None;
@@ -1430,6 +1499,7 @@ fn remote_commit(url: &str, tracked_ref: &str) -> Option<String> {
         .next_back()
         .map(ToString::to_string)
 }
+
 
 fn resolve_remote_target(url: &str, tracked_ref: &str) -> Option<(String, String)> {
     let target_ref = if semantic_version(tracked_ref).is_some() {
