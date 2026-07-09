@@ -94,7 +94,32 @@ export function SkillsPage() {
 
   const trustSkillMut = useMutation({
     mutationFn: trustSkill,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
+    onMutate: async (skillId) => {
+      await queryClient.cancelQueries({ queryKey: ['skills'] });
+      const previousSkills = queryClient.getQueryData<Skill[]>(['skills']);
+      queryClient.setQueryData<Skill[]>(['skills'], (current = []) =>
+        current.map((skill) =>
+          skill.id === skillId
+            ? { ...skill, trusted: true }
+            : skill
+        )
+      );
+      return { previousSkills };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['projectSkills'] });
+    },
+    onError: (error, _skillId, context) => {
+      if (context?.previousSkills) {
+        queryClient.setQueryData(['skills'], context.previousSkills);
+      }
+      if (error instanceof AppError) {
+        alert(`信任失败: ${error.details ?? error.message}`);
+        return;
+      }
+      alert(`信任失败: ${error instanceof Error ? error.message : String(error)}`);
+    },
   });
 
   const importSkillMut = useMutation({

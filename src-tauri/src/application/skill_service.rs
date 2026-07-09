@@ -29,7 +29,7 @@ mod tests {
     use crate::domain::error::DomainResult;
     use crate::domain::ports::SkillRepository;
     use crate::domain::project::Project;
-    use crate::domain::skill::{Category, UserSkillMeta};
+    use crate::domain::skill::{Category, UpdateStatus, UserSkillMeta};
 
     use super::{
         git_worktree_is_dirty, normalize_git_url, select_latest_stable_tag, trust_matches,
@@ -311,7 +311,46 @@ mod tests {
     fn dirty_content_invalidates_commit_trust() {
         assert!(trust_matches(Some("abc"), Some("abc"), false));
         assert!(!trust_matches(Some("abc"), Some("abc"), true));
+        assert!(trust_matches(Some("local-abc"), Some("local-abc"), true));
         assert!(!trust_matches(Some("abc"), Some("def"), false));
+    }
+
+    #[test]
+    fn trusting_dirty_git_worktree_fingerprints_current_content() {
+        let fixture = Fixture::new();
+        fixture.skill("repo", "Repo");
+        let repo = fixture.0.join("repo");
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "agentforge@example.test"]);
+        run_git(&repo, &["config", "user.name", "AgentForge Test"]);
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial"]);
+
+        let db =
+            Arc::new(crate::infrastructure::database::SqliteDatabase::open_in_memory().unwrap());
+        let service = SkillService::with_skills_dir(db, fixture.0.clone());
+        assert!(!service.get_skills().unwrap()[0].trusted);
+
+        fs::write(
+            repo.join("SKILL.md"),
+            "---\nname: Repo\ndescription: trusted dirty content\n---\n# Repo\n",
+        )
+        .unwrap();
+        let dirty_skill = service.get_skills().unwrap().remove(0);
+        assert_eq!(dirty_skill.update_status, UpdateStatus::Dirty);
+        assert!(!dirty_skill.trusted);
+
+        service.trust_skill("repo").unwrap();
+        let trusted_skill = service.get_skills().unwrap().remove(0);
+        assert!(trusted_skill.trusted);
+
+        fs::write(
+            repo.join("SKILL.md"),
+            "---\nname: Repo\ndescription: changed again\n---\n# Repo\n",
+        )
+        .unwrap();
+        let changed_skill = service.get_skills().unwrap().remove(0);
+        assert!(!changed_skill.trusted);
     }
 
     #[test]
@@ -559,6 +598,46 @@ impl SkillService {
         service
     }
 
+    fn current_package_record(
+        &self,
+        skill_id: &str,
+        path: &Path,
+    ) -> DomainResult<(SkillPackageRecord, bool)> {
+        let filesystem_source = git_source(path).unwrap_or_else(SkillSourceInfo::local);
+        let mut record = self
+            .repo
+            .get_skill_package(skill_id)?
+            .unwrap_or_else(|| package_record(skill_id, path, &filesystem_source));
+        let mut dirty = false;
+
+        if filesystem_source.kind == SourceKind::Git {
+            record.source_kind = SourceKind::Git;
+            record.source_url = filesystem_source.url.clone();
+            record.normalized_source = filesystem_source
+                .url
+                .as_deref()
+                .and_then(|url| normalize_git_url(url).ok());
+            record.tracked_ref = filesystem_source.tracked_ref.clone();
+            dirty = git_worktree_is_dirty(path).unwrap_or(true);
+            record.installed_commit = if dirty {
+                Some(local_revision(path))
+            } else {
+                filesystem_source
+                    .installed_commit
+                    .clone()
+                    .or_else(|| Some(local_revision(path)))
+            };
+        } else {
+            record.source_kind = SourceKind::Local;
+            record.source_url = None;
+            record.normalized_source = None;
+            record.tracked_ref = None;
+            record.installed_commit = Some(local_revision(path));
+        }
+
+        Ok((record, dirty))
+    }
+
     pub fn get_skills(&self) -> DomainResult<Vec<Skill>> {
         let mut list = Vec::new();
         if !self.skills_dir.exists() {
@@ -596,18 +675,8 @@ impl SkillService {
                     });
                 }
 
-                let filesystem_source = git_source(&path).unwrap_or_else(SkillSourceInfo::local);
-                let mut record = self
-                    .repo
-                    .get_skill_package(&skill_id)?
-                    .unwrap_or_else(|| package_record(&skill_id, &path, &filesystem_source));
-                if filesystem_source.kind == SourceKind::Git {
-                    record.source_kind = SourceKind::Git;
-                    record.source_url = filesystem_source.url.clone();
-                    record.normalized_source = filesystem_source
-                        .url
-                        .as_deref()
-                        .and_then(|url| normalize_git_url(url).ok());
+                let (mut record, dirty) = self.current_package_record(&skill_id, &path)?;
+                if record.source_kind == SourceKind::Git {
                     if let Some(normalized) = record.normalized_source.as_deref() {
                         if let Some(existing) = self.repo.find_skill_by_source(normalized)? {
                             if existing != skill_id {
@@ -618,13 +687,7 @@ impl SkillService {
                             }
                         }
                     }
-                    record.tracked_ref = filesystem_source.tracked_ref.clone();
-                    record.installed_commit = filesystem_source.installed_commit.clone();
-                } else {
-                    record.installed_commit = Some(local_revision(&path));
                 }
-                let dirty = filesystem_source.kind == SourceKind::Git
-                    && git_worktree_is_dirty(&path).unwrap_or(true);
                 let trusted = trust_matches(
                     record.trusted_commit.as_deref(),
                     record.installed_commit.as_deref(),
@@ -929,10 +992,13 @@ impl SkillService {
 
     pub fn trust_skill(&self, skill_id: &str) -> DomainResult<()> {
         let path = self.skills_dir.join(skill_id);
-        let mut record = self
-            .repo
-            .get_skill_package(skill_id)?
-            .unwrap_or_else(|| package_record(skill_id, &path, &SkillSourceInfo::local()));
+        if !path.is_dir() {
+            return Err(DomainError::Database(format!(
+                "Skill Pack {skill_id} is not installed"
+            )));
+        }
+        scan_skill_root(skill_id, &path)?;
+        let (mut record, _) = self.current_package_record(skill_id, &path)?;
         record.trusted_commit = record.installed_commit.clone();
         self.repo.save_skill_package(&record)
     }
@@ -1458,8 +1524,8 @@ fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
     #[cfg(target_os = "windows")]
     cmd1.creation_flags(0x08000000);
 
-    let has_changes = match cmd1.status() {
-        Ok(status) => !status.success(),
+    let has_changes = match cmd1.output() {
+        Ok(output) => !output.status.success(),
         Err(error) => return Err(DomainError::Database(error.to_string())),
     };
 
@@ -1475,8 +1541,8 @@ fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
     #[cfg(target_os = "windows")]
     cmd2.creation_flags(0x08000000);
 
-    let has_staged_changes = match cmd2.status() {
-        Ok(status) => !status.success(),
+    let has_staged_changes = match cmd2.output() {
+        Ok(output) => !output.status.success(),
         Err(error) => return Err(DomainError::Database(error.to_string())),
     };
 
@@ -1510,7 +1576,10 @@ fn trust_matches(
     installed_commit: Option<&str>,
     dirty: bool,
 ) -> bool {
-    !dirty && trusted_commit.is_some() && trusted_commit == installed_commit
+    let Some(installed_commit) = installed_commit else {
+        return false;
+    };
+    trusted_commit == Some(installed_commit) && (!dirty || installed_commit.starts_with("local-"))
 }
 
 fn remote_commit(url: &str, tracked_ref: &str) -> Option<String> {
