@@ -1306,7 +1306,10 @@ fn local_revision(root: &Path) -> String {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     for path in paths {
         if let Ok(rel_path) = path.strip_prefix(root) {
-            rel_path.to_string_lossy().replace('\\', "/").hash(&mut hasher);
+            rel_path
+                .to_string_lossy()
+                .replace('\\', "/")
+                .hash(&mut hasher);
         } else {
             path.to_string_lossy().replace('\\', "/").hash(&mut hasher);
         }
@@ -1417,7 +1420,9 @@ fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
 
     // Check if there are real modifications ignoring CR/LF differences
     let mut cmd1 = Command::new("git");
-    cmd1.arg("-C").arg(path).args(["diff", "--quiet", "--ignore-cr-at-eol"]);
+    cmd1.arg("-C")
+        .arg(path)
+        .args(["diff", "--quiet", "--ignore-cr-at-eol"]);
     #[cfg(target_os = "windows")]
     cmd1.creation_flags(0x08000000);
 
@@ -1432,7 +1437,9 @@ fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
 
     // Also check if there are staged differences
     let mut cmd2 = Command::new("git");
-    cmd2.arg("-C").arg(path).args(["diff", "--cached", "--quiet", "--ignore-cr-at-eol"]);
+    cmd2.arg("-C")
+        .arg(path)
+        .args(["diff", "--cached", "--quiet", "--ignore-cr-at-eol"]);
     #[cfg(target_os = "windows")]
     cmd2.creation_flags(0x08000000);
 
@@ -1451,7 +1458,9 @@ fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
     #[cfg(target_os = "windows")]
     cmd3.creation_flags(0x08000000);
 
-    let output = cmd3.output().map_err(|error| DomainError::Database(error.to_string()))?;
+    let output = cmd3
+        .output()
+        .map_err(|error| DomainError::Database(error.to_string()))?;
     if !output.status.success() {
         return Err(DomainError::Database(
             "Unable to inspect Git worktree".into(),
@@ -1499,7 +1508,6 @@ fn remote_commit(url: &str, tracked_ref: &str) -> Option<String> {
         .next_back()
         .map(ToString::to_string)
 }
-
 
 fn resolve_remote_target(url: &str, tracked_ref: &str) -> Option<(String, String)> {
     let target_ref = if semantic_version(tracked_ref).is_some() {
