@@ -228,7 +228,7 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
                     <select
                       id="imp-worktype"
                       className="harness-filter-select"
-                      style={{ borderRadius: 'var(--radius-sm)' }}
+                      style={{ borderRadius: 'var(--radius-sm)', width: '100%' }}
                       value={importWorkType}
                       onChange={(e) => setImportWorkType(e.target.value)}
                     >
@@ -328,7 +328,7 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
                 <select
                   id="ext-worktype"
                   className="harness-filter-select"
-                  style={{ borderRadius: 'var(--radius-sm)' }}
+                  style={{ borderRadius: 'var(--radius-sm)', width: '100%' }}
                   value={extractWorkType}
                   onChange={(e) => setExtractWorkType(e.target.value)}
                 >

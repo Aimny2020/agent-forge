@@ -27,14 +27,13 @@
 }
 
 .harness-search-input {
-  flex: 1;
-  max-width: 24rem;
   background: var(--color-canvas);
   border: 1px solid var(--color-outline);
   border-radius: 999px;
   padding: 0.6rem 1.5rem;
   color: var(--color-ink);
   font-size: 0.95rem;
+  width: 18rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -51,7 +50,7 @@
   padding: 0.6rem 2rem 0.6rem 1.2rem;
   color: var(--color-ink);
   font-size: 0.95rem;
-  min-width: 15rem;
+  width: 18rem;
   outline: none;
   cursor: pointer;
 }
