@@ -46,7 +46,7 @@ At least one module is required for Code Work creation.
 
 ## Shared Core Files
 
-Selected modules do not duplicate common long-running Harness artifacts. A composed Code Work template always starts from one shared core:
+Selected modules do not duplicate common long-running Harness artifacts. A composed Code Work template recommends one shared core:
 
 ```text
 AGENTS.md
@@ -75,7 +75,7 @@ docs/
   review-findings.md
 ```
 
-The system creates each shared file once. It never tries to merge duplicate Markdown content from multiple modules. The user may freely edit, add, or delete content files after creation; health checks remain advisory.
+`AGENTS.md` and `docs/harness.toml` are the only required files. The shared-core and module files are selected by default in the wizard and can be deselected before creation. When selected, each shared file is created once. The system never tries to merge duplicate Markdown content from multiple modules. The user may freely edit, add, or delete content files after creation; health checks remain advisory.
 
 ## Combined AGENTS.md
 
@@ -166,7 +166,7 @@ Changing a Code Work module combination requires creating or duplicating a templ
 1. Select **Code Work**.
 2. Select one or more Code Work modules.
 3. Enter template name and description. The backend generates a UUID.
-4. Review the deduplicated shared-core and module file list. All generated files are selected by default and may be deselected except `AGENTS.md` and `docs/harness.toml`.
+4. Review the deduplicated shared-core and module file list. All `docs/` files are selected by default and may be deselected; `AGENTS.md` and `docs/harness.toml` are always generated.
 5. Review the combined file tree.
 6. Create the template and open the editor.
 
@@ -232,7 +232,7 @@ Because the product is still under active development, no automatic migration of
 - Code Work module selection supports one, two, or all three modules.
 - Code Work modules are multi-select, not mutually exclusive.
 - Each selected module contributes its dedicated files and concise `AGENTS.md` role rules.
-- Shared core files are generated once regardless of the number of selected modules.
+- Shared-core files are offered once regardless of the number of selected modules and generated at most once when selected.
 - Generated `AGENTS.md` classifies tasks and applies selected module rules based on the task.
 - Multi-module tasks follow Design -> Development -> Review.
 - A failed review returns the work to Development before re-review.

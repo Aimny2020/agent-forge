@@ -1,4 +1,4 @@
-use super::harness::{HarnessPreset, HarnessPresetFile};
+use super::harness::{CodeWorkModule, HarnessPreset, HarnessPresetFile};
 
 fn markdown(path: &str, label: &str, content: &str) -> HarnessPresetFile {
     HarnessPresetFile {
@@ -56,55 +56,59 @@ fn feature_list() -> HarnessPresetFile {
     )
 }
 
-fn code_feature_development() -> HarnessPreset {
-    let mut files = shared_code_files();
-    files.insert(1, feature_list());
-    HarnessPreset {
-        id: "code-feature-development".into(),
-        work_type: "code".into(),
-        name: "Feature Development".into(),
-        description: "Verified, one-feature-at-a-time implementation for long-running coding work."
-            .into(),
-        files,
-    }
+pub fn code_work_shared_files() -> Vec<HarnessPresetFile> {
+    shared_code_files()
 }
 
-fn code_review() -> HarnessPreset {
-    let mut files = shared_code_files();
-    files.push(markdown(
-        "docs/review-rubric.md",
-        "Evidence-based review rubric",
-        "# Review Rubric\n\n| Dimension | Pass condition | Evidence |\n| --- | --- | --- |\n| Correctness | Requested behavior is covered | |\n| Architecture | Boundaries and invariants hold | |\n| Verification | Required checks pass | |\n| Scope | No unrelated changes | |\n\n## Verdict\n- Accept\n- Revise\n- Block\n",
-    ));
-    files.push(markdown(
-        "docs/review-findings.md",
-        "Review findings",
-        "# Review Findings\n\n## Finding 001\n- Severity: high / medium / low\n- Location:\n- Evidence:\n- Why it matters:\n- Required follow-up:\n- Status: open / fixed / accepted\n\n## Review Summary\n- Blocking findings:\n- Verification run:\n- Final verdict:\n",
-    ));
-    HarnessPreset {
-        id: "code-review".into(),
-        work_type: "code".into(),
-        name: "Code Review".into(),
-        description: "Independent, evidence-based review for code, plans, and technical changes."
-            .into(),
-        files,
-    }
+pub fn built_in_code_work_modules() -> Vec<CodeWorkModule> {
+    vec![
+        CodeWorkModule {
+            id: "technical-design".into(),
+            name: "Technical Design".into(),
+            description: "Architecture-first design work with explicit alternatives, constraints, and verification.".into(),
+            files: vec![
+                markdown(
+                    "docs/decision-record.md",
+                    "Technical decision record",
+                    "# Decision Record\n\n## Decision\nState the chosen approach.\n\n## Context\nWhat problem and constraints led to this decision?\n\n## Alternatives\n- Option:\n  - Benefits:\n  - Costs:\n\n## Consequences\n- Positive:\n- Negative:\n- Follow-up:\n",
+                ),
+            ],
+            agent_instructions: "Focus on architecture-first design. Explore alternatives, specify constraints, and define verification plans before implementation.".into(),
+        },
+        CodeWorkModule {
+            id: "feature-development".into(),
+            name: "Feature Development".into(),
+            description: "Verified, one-feature-at-a-time implementation for long-running coding work.".into(),
+            files: vec![
+                feature_list(),
+            ],
+            agent_instructions: "Implement features one at a time using test-driven development. Verify each feature is fully working before moving to the next.".into(),
+        },
+        CodeWorkModule {
+            id: "code-review".into(),
+            name: "Code Review".into(),
+            description: "Independent, evidence-based review for code, plans, and technical changes.".into(),
+            files: vec![
+                markdown(
+                    "docs/review-rubric.md",
+                    "Evidence-based review rubric",
+                    "# Review Rubric\n\n| Dimension | Pass condition | Evidence |\n| --- | --- | --- |\n| Correctness | Requested behavior is covered | |\n| Architecture | Boundaries and invariants hold | |\n| Verification | Required checks pass | |\n| Scope | No unrelated changes | |\n\n## Verdict\n- Accept\n- Revise\n- Block\n",
+                ),
+                markdown(
+                    "docs/review-findings.md",
+                    "Review findings",
+                    "# Review Findings\n\n## Finding 001\n- Severity: high / medium / low\n- Location:\n- Evidence:\n- Why it matters:\n- Required follow-up:\n- Status: open / fixed / accepted\n\n## Review Summary\n- Blocking findings:\n- Verification run:\n- Final verdict:\n",
+                ),
+            ],
+            agent_instructions: "Conduct independent, evidence-based code reviews. Assess correctness, architecture alignment, scope, and verification evidence.".into(),
+        },
+    ]
 }
 
-fn code_technical_design() -> HarnessPreset {
-    let mut files = shared_code_files();
-    files.push(markdown(
-        "docs/decision-record.md",
-        "Technical decision record",
-        "# Decision Record\n\n## Decision\nState the chosen approach.\n\n## Context\nWhat problem and constraints led to this decision?\n\n## Alternatives\n- Option:\n  - Benefits:\n  - Costs:\n\n## Consequences\n- Positive:\n- Negative:\n- Follow-up:\n",
-    ));
-    HarnessPreset {
-        id: "code-technical-design".into(),
-        work_type: "code".into(),
-        name: "Technical Design".into(),
-        description: "Architecture-first design work with explicit alternatives, constraints, and verification.".into(),
-        files,
-    }
+pub fn find_code_work_module(id: &str) -> Option<CodeWorkModule> {
+    built_in_code_work_modules()
+        .into_iter()
+        .find(|module| module.id == id)
 }
 
 fn document_professional_report() -> HarnessPreset {
@@ -176,9 +180,6 @@ fn presentation_briefing() -> HarnessPreset {
 
 pub fn built_in_harness_presets() -> Vec<HarnessPreset> {
     vec![
-        code_feature_development(),
-        code_review(),
-        code_technical_design(),
         document_professional_report(),
         document_academic_paper(),
         presentation_briefing(),
@@ -193,18 +194,38 @@ pub fn find_harness_preset(id: &str) -> Option<HarnessPreset> {
 
 #[cfg(test)]
 mod tests {
-    use super::{built_in_harness_presets, find_harness_preset};
+    use super::{
+        built_in_code_work_modules, built_in_harness_presets, find_code_work_module,
+        find_harness_preset,
+    };
+
+    #[test]
+    fn code_work_modules_cover_design_development_and_review() {
+        let modules = built_in_code_work_modules();
+
+        assert_eq!(modules.len(), 3);
+        assert!(find_code_work_module("technical-design")
+            .unwrap()
+            .files
+            .iter()
+            .any(|file| file.path == "docs/decision-record.md"));
+        assert!(find_code_work_module("feature-development")
+            .unwrap()
+            .files
+            .iter()
+            .any(|file| file.path == "docs/feature_list.json"));
+        assert!(find_code_work_module("code-review")
+            .unwrap()
+            .files
+            .iter()
+            .any(|file| file.path == "docs/review-findings.md"));
+    }
 
     #[test]
     fn built_in_presets_cover_the_confirmed_workflows() {
         let presets = built_in_harness_presets();
 
-        assert_eq!(presets.len(), 6);
-        assert!(find_harness_preset("code-feature-development")
-            .unwrap()
-            .files
-            .iter()
-            .any(|file| file.path == "docs/feature_list.json"));
+        assert_eq!(presets.len(), 3);
         assert!(find_harness_preset("document-academic-paper")
             .unwrap()
             .files

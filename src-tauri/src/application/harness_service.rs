@@ -1404,11 +1404,11 @@ mod tests {
         let input = CreateHarnessTemplateInput {
             name: "My Template".into(),
             description: "A description".into(),
-            work_type: "code".into(),
-            preset_id: Some("code-feature-development".into()),
+            work_type: "document".into(),
+            preset_id: Some("document-academic-paper".into()),
             optional_files: vec![
-                "docs/architecture.md".into(),
-                "docs/feature_list.json".into(),
+                "docs/paper-outline.md".into(),
+                "docs/research-question.md".into(),
             ],
         };
 
@@ -1417,14 +1417,14 @@ mod tests {
         assert_eq!(detail.name, "My Template");
         assert_eq!(
             detail.created_from_preset.as_deref(),
-            Some("code-feature-development")
+            Some("document-academic-paper")
         );
         assert_eq!(detail.files.len(), 4);
         assert!(detail.validation.is_valid);
         let agents = service.read_harness_file(&detail.id, "AGENTS.md").unwrap();
-        assert!(agents.content.contains("docs/architecture.md"));
-        assert!(agents.content.contains("docs/feature_list.json"));
-        assert!(!agents.content.contains("docs/risk-rules.md"));
+        assert!(agents.content.contains("docs/paper-outline.md"));
+        assert!(agents.content.contains("docs/research-question.md"));
+        assert!(!agents.content.contains("docs/literature-review.md"));
 
         let list = service.get_harness_templates().unwrap();
         assert_eq!(list.len(), 1);
@@ -1444,8 +1444,8 @@ mod tests {
             .create_harness_template(CreateHarnessTemplateInput {
                 name: "Invalid".into(),
                 description: "".into(),
-                work_type: "document".into(),
-                preset_id: Some("code-review".into()),
+                work_type: "presentation".into(),
+                preset_id: Some("document-academic-paper".into()),
                 optional_files: vec![],
             })
             .unwrap_err();
@@ -1467,7 +1467,7 @@ mod tests {
                 name: "Invalid Custom".into(),
                 description: "".into(),
                 work_type: "custom".into(),
-                preset_id: Some("code-review".into()),
+                preset_id: Some("document-academic-paper".into()),
                 optional_files: vec![],
             })
             .unwrap_err();

@@ -26,6 +26,16 @@ pub struct HarnessPreset {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeWorkModule {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub files: Vec<HarnessPresetFile>,
+    pub agent_instructions: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 pub struct HarnessManifest {
     pub id: String,
     pub name: String,
