@@ -700,3 +700,74 @@
   margin-right: 6px;
   vertical-align: middle;
 }
+
+/* Lock parent container heights when Skills page is active */
+body:has(.skills-page-container) {
+  overflow: hidden !important;
+}
+
+.app-shell:has(.skills-page-container) {
+  height: 100vh;
+  overflow: hidden !important;
+}
+
+.shell-body:has(.skills-page-container) {
+  height: calc(100vh - 4rem);
+  overflow: hidden !important;
+  box-sizing: border-box;
+}
+
+.workspace-main:has(.skills-page-container) {
+  height: 100%;
+  overflow: hidden !important;
+}
+
+/* Skills Page Root Container */
+.skills-page-container {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--space-2) !important;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.skills-page-container .page-header {
+  flex-shrink: 0;
+}
+
+.skills-page-container .content-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr) !important;
+  gap: var(--space-3);
+  overflow: hidden;
+}
+
+.skills-sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto !important;
+  height: 100% !important;
+  box-sizing: border-box;
+}
+
+.skills-main-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.skills-toolbar {
+  flex-shrink: 0;
+  margin-bottom: var(--space-2);
+}
+
+.skills-cards-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--space-3);
+}

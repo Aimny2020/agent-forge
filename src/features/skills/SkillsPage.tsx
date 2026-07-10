@@ -177,7 +177,7 @@ export function SkillsPage() {
   };
 
   return (
-    <div className="page-stack">
+    <div className="page-stack skills-page-container">
       <header className="page-header" style={{ minHeight: 'auto', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', flexWrap: 'wrap' }}>
           <h1 style={{ fontSize: '1.75rem', lineHeight: 1 }}>Skills 管理</h1>
