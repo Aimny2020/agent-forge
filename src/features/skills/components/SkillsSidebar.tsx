@@ -25,6 +25,7 @@ export function SkillsSidebar({
   const [newCatName, setNewCatName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,48 +55,86 @@ export function SkillsSidebar({
           <span className="cat-name">未分类</span>
           <span className="count-badge">{skillsCountMap['uncategorized'] || 0}</span>
         </li>
-        {categories.map((cat) => (
-          <li
-            key={cat.id}
-            data-active={selectedCategoryId === cat.id}
-            onClick={() => onSelectCategory(cat.id)}
-          >
-            <FolderOpen size={16} />
-            {editingId === cat.id ? (
-              <input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onBlur={() => {
-                  if (editingName.trim()) onRenameCategory(cat.id, editingName.trim());
-                  setEditingId(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+        {categories.map((cat) => {
+          const isDeletingConfirm = deletingId === cat.id;
+          return (
+            <li
+              key={cat.id}
+              data-active={selectedCategoryId === cat.id}
+              data-deleting={isDeletingConfirm}
+              onClick={() => {
+                if (isDeletingConfirm) return;
+                onSelectCategory(cat.id);
+              }}
+            >
+              <FolderOpen size={16} />
+              {editingId === cat.id ? (
+                <input
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={() => {
                     if (editingName.trim()) onRenameCategory(cat.id, editingName.trim());
                     setEditingId(null);
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-                autoFocus
-              />
-            ) : (
-              <>
-                <span className="cat-name">{cat.name}</span>
-                <div className="cat-actions" onClick={(e) => e.stopPropagation()}>
-                  <Edit2
-                    size={12}
-                    onClick={() => {
-                      setEditingId(cat.id);
-                      setEditingName(cat.name);
-                    }}
-                  />
-                  <Trash2 size={12} onClick={() => onDeleteCategory(cat.id)} />
-                </div>
-              </>
-            )}
-            <span className="count-badge">{skillsCountMap[cat.id] || 0}</span>
-          </li>
-        ))}
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (editingName.trim()) onRenameCategory(cat.id, editingName.trim());
+                      setEditingId(null);
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                />
+              ) : (
+                <>
+                  <span className="cat-name">{cat.name}</span>
+                  {isDeletingConfirm ? (
+                    <div className="cat-confirm-actions" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="cat-confirm-btn cat-confirm-btn--yes"
+                        title="确认删除"
+                        onClick={() => {
+                          onDeleteCategory(cat.id);
+                          setDeletingId(null);
+                        }}
+                      >
+                        确认
+                      </button>
+                      <button
+                        type="button"
+                        className="cat-confirm-btn cat-confirm-btn--no"
+                        title="取消"
+                        onClick={() => setDeletingId(null)}
+                      >
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="cat-actions" onClick={(e) => e.stopPropagation()}>
+                      <Edit2
+                        size={12}
+                        onClick={() => {
+                          setEditingId(cat.id);
+                          setEditingName(cat.name);
+                        }}
+                      />
+                      <Trash2
+                        size={12}
+                        onClick={() => {
+                          setDeletingId(cat.id);
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+              {!isDeletingConfirm && (
+                <span className="count-badge">{skillsCountMap[cat.id] || 0}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <form onSubmit={handleCreate} className="create-category-form">
         <input
