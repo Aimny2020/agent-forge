@@ -119,12 +119,28 @@ export interface HarnessTemplateFile {
   standard: boolean;
 }
 
+export interface HarnessPresetFile {
+  path: string;
+  kind: string;
+  label: string;
+  content: string;
+}
+
+export interface HarnessPreset {
+  id: string;
+  workType: string;
+  name: string;
+  description: string;
+  files: HarnessPresetFile[];
+}
+
 export interface HarnessManifest {
   id: string;
   name: string;
   version: string;
   description: string;
   workType: string;
+  createdFromPreset?: string;
   source: string;
   requiredFiles: string[];
   files: HarnessTemplateFile[];
@@ -135,6 +151,7 @@ export interface HarnessTemplateSummary {
   name: string;
   description: string;
   workType: string;
+  createdFromPreset?: string;
   sourceType: string;
   sourcePath?: string;
   createdAt: string;
@@ -166,6 +183,7 @@ export interface HarnessTemplateDetail {
   name: string;
   description: string;
   workType: string;
+  createdFromPreset?: string;
   sourceType: string;
   sourcePath?: string;
   createdAt: string;
@@ -180,10 +198,10 @@ export interface HarnessFile {
 }
 
 export interface CreateHarnessTemplateInput {
-  id: string;
   name: string;
   description: string;
   workType: string;
+  presetId?: string;
   optionalFiles: string[];
 }
 
@@ -197,16 +215,16 @@ export interface HarnessImportInspection {
 }
 
 export interface HarnessImportOptions {
-  id: string;
   name: string;
   description: string;
   workType: string;
+  presetId?: string;
 }
 
 export interface HarnessExtractOptions {
-  id: string;
   name: string;
   description: string;
   workType: string;
+  presetId?: string;
   selectedFiles: string[];
 }

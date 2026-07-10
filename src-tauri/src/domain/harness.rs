@@ -7,12 +7,33 @@ pub struct HarnessTemplateFile {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HarnessPresetFile {
+    pub path: String,
+    pub kind: String,
+    pub label: String,
+    pub content: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HarnessPreset {
+    pub id: String,
+    pub work_type: String,
+    pub name: String,
+    pub description: String,
+    pub files: Vec<HarnessPresetFile>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 pub struct HarnessManifest {
     pub id: String,
     pub name: String,
     pub version: String,
     pub description: String,
     pub work_type: String,
+    #[serde(default)]
+    pub created_from_preset: Option<String>,
     pub source: String,
     pub required_files: Vec<String>,
     #[serde(default)]
@@ -26,6 +47,7 @@ pub struct HarnessTemplateSummary {
     pub name: String,
     pub description: String,
     pub work_type: String,
+    pub created_from_preset: Option<String>,
     pub source_type: String, // "local" | "project"
     pub source_path: Option<String>,
     pub created_at: String,
@@ -63,6 +85,7 @@ pub struct HarnessTemplateDetail {
     pub name: String,
     pub description: String,
     pub work_type: String,
+    pub created_from_preset: Option<String>,
     pub source_type: String,
     pub source_path: Option<String>,
     pub created_at: String,
@@ -81,10 +104,10 @@ pub struct HarnessFile {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateHarnessTemplateInput {
-    pub id: String,
     pub name: String,
     pub description: String,
     pub work_type: String,
+    pub preset_id: Option<String>,
     pub optional_files: Vec<String>,
 }
 
@@ -102,18 +125,18 @@ pub struct HarnessImportInspection {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HarnessImportOptions {
-    pub id: String,
     pub name: String,
     pub description: String,
     pub work_type: String,
+    pub preset_id: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HarnessExtractOptions {
-    pub id: String,
     pub name: String,
     pub description: String,
     pub work_type: String,
+    pub preset_id: Option<String>,
     pub selected_files: Vec<String>,
 }

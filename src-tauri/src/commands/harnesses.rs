@@ -2,7 +2,8 @@ use crate::commands::health::AppState;
 use crate::commands::CommandError;
 use crate::domain::harness::{
     CreateHarnessTemplateInput, HarnessExtractOptions, HarnessFile, HarnessImportInspection,
-    HarnessImportOptions, HarnessTemplateDetail, HarnessTemplateSummary, HarnessValidationReport,
+    HarnessImportOptions, HarnessPreset, HarnessTemplateDetail, HarnessTemplateSummary,
+    HarnessValidationReport,
 };
 use tauri::State;
 
@@ -14,6 +15,13 @@ pub async fn get_harness_templates(
         .harnesses
         .get_harness_templates()
         .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_harness_presets(
+    state: State<'_, AppState>,
+) -> Result<Vec<HarnessPreset>, CommandError> {
+    Ok(state.harnesses.get_harness_presets())
 }
 
 #[tauri::command]
@@ -149,11 +157,10 @@ pub async fn validate_harness_template(
 pub async fn duplicate_harness_template(
     state: State<'_, AppState>,
     template_id: String,
-    target_id: String,
     target_name: String,
 ) -> Result<HarnessTemplateDetail, CommandError> {
     state
         .harnesses
-        .duplicate_harness_template(&template_id, &target_id, &target_name)
+        .duplicate_harness_template(&template_id, &target_name)
         .map_err(CommandError::from)
 }

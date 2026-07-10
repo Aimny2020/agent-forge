@@ -8,7 +8,15 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: invokeMock,
 }));
 
-import { AppError, checkSkillUpdates, getHealth, inspectSkillImport, trustSkill, updateSkill } from './tauriClient';
+import {
+  AppError,
+  checkSkillUpdates,
+  getHarnessPresets,
+  getHealth,
+  inspectSkillImport,
+  trustSkill,
+  updateSkill,
+} from './tauriClient';
 
 describe('tauriClient', () => {
   beforeEach(() => {
@@ -68,5 +76,12 @@ describe('tauriClient', () => {
       source: 'https://github.com/example/pack',
       importType: 'git',
     });
+  });
+
+  it('loads the backend-owned Harness preset registry', async () => {
+    invokeMock.mockResolvedValue([]);
+
+    await expect(getHarnessPresets()).resolves.toEqual([]);
+    expect(invokeMock).toHaveBeenCalledWith('get_harness_presets');
   });
 });

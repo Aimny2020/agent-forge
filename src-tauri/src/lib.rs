@@ -6,10 +6,10 @@ pub mod infrastructure;
 use std::sync::Arc;
 
 use application::health_service::HealthService;
+use commands::harnesses::*;
 use commands::health::{health_check, AppState};
 use commands::projects::*;
 use commands::skills::*;
-use commands::harnesses::*;
 use infrastructure::database::SqliteDatabase;
 use infrastructure::system::PlatformSystem;
 use tauri::Manager;
@@ -71,6 +71,7 @@ pub fn run() {
             get_unassociated_descriptions_count,
             clear_unassociated_descriptions,
             get_harness_templates,
+            get_harness_presets,
             inspect_harness_import,
             import_harness_from_folder,
             extract_harness_from_project,

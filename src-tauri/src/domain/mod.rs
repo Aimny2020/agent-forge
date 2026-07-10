@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod error;
 pub mod harness;
+pub mod harness_presets;
 pub mod health;
 pub mod ports;
 pub mod project;

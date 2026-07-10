@@ -2,305 +2,225 @@
 
 ## Goal
 
-Build the global Harness page as a local template library for long-running AI project work. A Harness template is a reusable file package that defines how agents should understand, operate on, and verify work in a project.
+Build the global Harness page as a local library of reusable templates for long-running AI work. A Harness template is a file package that gives an agent durable instructions, state, scope, verification, and session handoff artifacts.
 
-This release focuses on creating, importing, editing, validating, and organizing Harness templates. Project-level Harness selection and applying templates into projects are separate follow-up work.
+This release focuses on creating, importing, editing, validating, and organizing templates. Project-level Harness selection, applying templates into projects, agent execution, and Skill/MCP binding remain separate work.
 
 ## Product Boundary
 
 AgentForge has two Harness surfaces:
 
 - **Global Harness page**: manages reusable Harness templates.
-- **Project Harness page**: later selects which Harness template a project uses and writes the selected files into that project.
+- **Project Harness page**: a later surface that selects and applies one or more templates to a project.
 
-The first Harness release implements only the global template management page. It does not execute agents, bind Skills, configure MCP servers, or enforce runtime permissions.
+The global page owns templates only. It must not imply that a template has already been applied to a project or is controlling an agent runtime.
 
-## Harness Template Model
+## Harness Model
 
-A Harness template is a directory-shaped file package. The root `AGENTS.md` is mandatory and acts as the main agent entrypoint. Supporting rule files live under `docs/`.
+A Harness template is a directory-shaped file package:
 
 ```text
 AGENTS.md
 docs/
   harness.toml
-  architecture.md
-  feature_list.json
-  task-status.md
-  verification.md
-  risk-rules.md
-  agent-profile.md
+  ...selected supporting files
 ```
 
-Required files:
+Two files are hard requirements:
 
-- `AGENTS.md`: the primary instruction file agents must read first.
-- `docs/harness.toml`: AgentForge metadata and file manifest for managing the template.
+- `AGENTS.md`: the agent entrypoint and navigation page.
+- `docs/harness.toml`: AgentForge metadata and file manifest.
 
-Standard optional files:
+All other files are optional at creation and freely editable afterward. AgentForge health checks are advisory: they warn about missing or invalid artifacts but never rewrite user-owned files.
 
-- `docs/architecture.md`: architecture boundaries, module responsibilities, and constraints.
-- `docs/feature_list.json`: machine-readable feature list, status, priority, and ownership notes.
-- `docs/task-status.md`: current task state, phase notes, known issues, and recent decisions.
-- `docs/verification.md`: completion criteria, test commands, build checks, and manual review items.
-- `docs/risk-rules.md`: risky operations, approval rules, blocked actions, and safety constraints.
-- `docs/agent-profile.md`: preferred agent behavior, collaboration style, and tool/model guidance.
+### Five-Subsystem Standard
 
-During template creation, AgentForge generates `AGENTS.md`, `docs/harness.toml`, and the selected optional files. After creation, users may freely edit every file, including `AGENTS.md` and generated references.
+Every built-in preset is designed around the five subsystems needed for long-running work:
 
-## Manifest
+| Subsystem | Responsibility | Typical artifacts |
+|---|---|---|
+| Instructions | Startup path, non-negotiable rules, definition of done | `AGENTS.md` |
+| State | Verified progress, active work, blockers, next step | `task-status.md`, `feature_list.json` |
+| Verification | Acceptance conditions and evidence | `verification.md`, `quality-rubric.md` |
+| Scope | Boundaries, risks, and decisions | `architecture.md`, `risk-rules.md`, `decision-record.md` |
+| Lifecycle | Clean cross-session continuation | `session-handoff.md` |
 
-`docs/harness.toml` is required so AgentForge can identify, validate, display, and import templates reliably. It is software-managed during creation but editable after creation.
+## Identity and Manifest
 
-Example:
+Each template has a stable, system-generated ID. It is written to `docs/harness.toml`, used as the SQLite and IPC key, and used for the managed storage directory. Users do not type or edit the ID in the standard creation flow.
+
+The display name and description remain user-editable. Renaming a template never changes its ID or directory. Duplicating a template always creates a new ID.
+
+Example manifest:
 
 ```toml
-id = "code-work-standard"
-name = "Code Work Standard"
+id = "5c91f4d0-8da2-4d89-a469-fd2d8f1db0ad"
+name = "Web Application Development"
 version = "1.0.0"
-description = "A standard harness for long-running coding work."
+description = "A long-running harness for verified feature development."
 work_type = "code"
+created_from_preset = "code-feature-development"
 source = "local"
 
 required_files = ["AGENTS.md", "docs/harness.toml"]
 
 [[files]]
-path = "docs/architecture.md"
-kind = "markdown"
-standard = true
-
-[[files]]
 path = "docs/feature_list.json"
 kind = "json"
 standard = true
-
-[[files]]
-path = "docs/verification.md"
-kind = "markdown"
-standard = true
 ```
 
-If a local import contains `AGENTS.md` but no `docs/harness.toml`, AgentForge may generate a manifest after the user confirms name, description, and work type.
+`work_type` and `created_from_preset` are immutable once a template is created. The user must create or duplicate a template to use a different category or preset. They may still edit, add, and delete all content files after creation.
 
-## Work Types
+## Work Types and Presets
 
-Creation starts from an AI work type, not a project type. A single project may later use multiple Harness templates, but each template should stay focused on one class of work.
+The wizard exposes four stable work types:
 
-Initial work types:
+- **Code Work**: implementation, fixes, refactors, tests, code review, and technical design.
+- **Document Work**: professional reports, academic papers, and other evidence-based long-form deliverables.
+- **Presentation Work**: deck-based briefings, narrative presentations, and speaker material.
+- **Custom Work**: a minimal, unconstrained starting point.
 
-- **Code Work**: implementation, fixes, refactors, tests.
-- **Documentation Work**: specs, design docs, knowledge base, long-form writing.
-- **Presentation Work**: decks, briefings, narratives, slide content.
-- **Review Work**: code review, plan review, document review.
-- **Custom Work**: minimal starting point with only required files unless the user selects more.
+Work types are categories for filtering and organization. The actual creation blueprint is the immutable built-in preset selected beneath a work type.
 
-Default optional file selections:
+### Built-In Presets
 
-- Code Work: `architecture.md`, `feature_list.json`, `verification.md`, `risk-rules.md`.
-- Documentation Work: `feature_list.json`, `task-status.md`, `verification.md`.
-- Presentation Work: `feature_list.json`, `task-status.md`, `agent-profile.md`.
-- Review Work: `architecture.md`, `verification.md`, `risk-rules.md`.
-- Custom Work: no optional files selected by default.
+Built-in presets are system-owned and read-only. Users do not create, edit, or delete presets. They create and own templates derived from them.
 
-The creation wizard exposes file purpose labels rather than raw filenames first, while still showing the target path.
+| Work type | Preset ID | Preset name | Default supporting files |
+|---|---|---|---|
+| Code Work | `code-feature-development` | Feature Development | `architecture.md`, `feature_list.json`, `task-status.md`, `session-handoff.md`, `verification.md`, `risk-rules.md` |
+| Code Work | `code-review` | Code Review | `architecture.md`, `task-status.md`, `session-handoff.md`, `verification.md`, `risk-rules.md`, `review-rubric.md`, `review-findings.md` |
+| Code Work | `code-technical-design` | Technical Design | `architecture.md`, `task-status.md`, `session-handoff.md`, `verification.md`, `risk-rules.md`, `decision-record.md` |
+| Document Work | `document-professional-report` | Professional Report | `document-brief.md`, `outline.md`, `research-notes.md`, `evidence-matrix.md`, `quality-rubric.md`, `task-status.md`, `session-handoff.md`, `verification.md` |
+| Document Work | `document-academic-paper` | Academic Paper | `research-question.md`, `paper-outline.md`, `literature-review.md`, `evidence-matrix.md`, `citation-register.md`, `quality-rubric.md`, `task-status.md`, `session-handoff.md`, `verification.md` |
+| Presentation Work | `presentation-briefing` | Presentation Briefing | `presentation-brief.md`, `narrative-outline.md`, `slide-plan.md`, `speaker-notes.md`, `evidence-matrix.md`, `visual-direction.md`, `quality-rubric.md`, `task-status.md`, `session-handoff.md`, `verification.md` |
+
+Custom Work has no preset. It starts with only `AGENTS.md` and `docs/harness.toml`, then lets the user select any standard file from the full library or leave the template minimal.
+
+### File Responsibilities
+
+- `task-status.md`: current verified state, active work, blockers, decisions, evidence, and next step.
+- `session-handoff.md`: compact current-objective handoff for the next session.
+- `feature_list.json`: machine-readable work items, dependencies, statuses, and completion evidence.
+- `verification.md`: runnable or inspectable acceptance criteria and evidence requirements.
+- `review-rubric.md`: review dimensions, severity/score rules, and verdict conditions.
+- `review-findings.md`: individual findings, evidence, status, and required follow-up.
+- `decision-record.md`: decision, context, alternatives, rationale, and consequences.
+- `evidence-matrix.md`: claim-to-evidence-to-source mapping with confidence and open questions.
+- `quality-rubric.md`: explicit quality dimensions and delivery threshold.
+- `citation-register.md`: source, citation key, usage location, and citation check status.
+- `presentation-brief.md`: audience, desired decision, constraints, and duration.
+- `narrative-outline.md`: conclusion-first presentation story.
+- `slide-plan.md`: per-slide purpose, core message, content, assets, and completion state.
+- `speaker-notes.md`: presenter guidance and transitions.
+- `visual-direction.md`: visual principles, brand constraints, and prohibited treatments.
+
+## Preset Registry
+
+The Rust backend owns the complete, versioned built-in preset registry. Each registry entry contains:
+
+- Preset ID, work type, name, and description.
+- Default file list and file kinds.
+- Content skeleton for every generated supporting file.
+- `AGENTS.md` generation rules and per-file references.
+
+The frontend requests this registry through IPC and renders the wizard from it. It must not maintain a copied file list or content definition. This prevents the UI selection from drifting from the backend-generated template.
 
 ## Creation Flow
 
-The primary creation path is a guided wizard.
+The primary creation path is a guided wizard:
 
-1. Select AI work type.
-2. Enter template name and description.
-3. Select optional standard files.
-4. Review generated file tree.
-5. Create template.
-6. Open the template editor.
+1. Select a work type.
+2. Select an available system preset, unless the user selected Custom Work.
+3. Enter template name and description. The system generates the stable ID.
+4. Review the preset-recommended supporting files. They are preselected but can be deselected.
+5. Review the generated file tree.
+6. Create the template and open it in the editor.
 
-During creation, AgentForge maintains the `AGENTS.md` generated structure and references to selected supporting files. After creation, the template becomes user-owned and fully editable.
+The only enforced files are `AGENTS.md` and `docs/harness.toml`. Deselecting a recommended file removes it from the generated package and from the initial `AGENTS.md` references.
 
-Users should not need to define custom filenames in the wizard. After creation, the editor allows arbitrary new files.
+### Generated AGENTS.md
 
-## Import Flow
+AgentForge generates a preset-specific `AGENTS.md` that remains short and acts as a routing document rather than a manual. It includes:
 
-The first release supports two import sources:
+1. Startup order: which selected status, plan, and evidence files to read before work.
+2. Work rules: one clear active work item and no unrelated scope expansion.
+3. File navigation: explicit references to every generated supporting file and its purpose.
+4. Definition of done: required verification and evidence conditions.
+5. End-of-session routine: update `task-status.md`, `session-handoff.md`, risks, and next step when those files exist.
 
-- **Import from local directory**
-- **Create from current project**
+After creation, users can edit or delete `AGENTS.md` and any supporting file. Missing AGENTS references are warnings only.
 
-Deferred import sources:
+## Import and Extraction
 
-- Archive import.
-- Git or URL import.
-- Marketplace or remote template registry.
-- Update checking.
+The first release supports:
 
-Local directory import behavior:
+- Local directory import.
+- Creating a reusable template by extracting files from the current project.
 
-- Inspect the selected directory.
-- Require `AGENTS.md`.
-- Detect `docs/harness.toml` if present.
-- Detect standard optional files.
-- List additional files.
-- If `docs/harness.toml` is missing, offer to generate it.
-- Confirm name, description, work type, and destination ID.
-- Copy the directory into the global Harness template library.
+Imports never mutate the source directory. An imported template keeps its discovered files but uses the user-selected work type and optional built-in preset provenance when supplied. If no preset applies, it is stored as Custom Work.
 
-Create-from-current-project behavior:
+Archive, Git/URL, marketplace, remote update, and export support remain deferred.
 
-- Inspect the current project root for `AGENTS.md`.
-- Inspect project `docs/` for standard Harness files.
-- Let the user choose which discovered files to include.
-- Generate `docs/harness.toml` if needed.
-- Save a reusable copy into the global Harness template library.
+## Editing and Health
 
-Import should never mutate the source directory or current project.
+The detail page remains a file editor first:
 
-## Editing Experience
+- Left: template list and file tree.
+- Center: text editor for the selected file.
+- Right: mutable metadata, health, and destructive actions.
 
-The Harness template detail page is a file editor first and a settings page second.
+The settings panel shows immutable `work_type` and `created_from_preset` as read-only provenance. Name, description, version, and all files remain editable. Users can create and delete arbitrary files after creation.
 
-Recommended layout:
+Health checks warn about:
 
-- Left panel: template list or file tree.
-- Center panel: text editor for the selected file.
-- Right panel: metadata, health checks, and actions.
-
-Editor behavior:
-
-- Markdown files open as text, with preview optional in this release.
-- JSON files validate syntax.
-- TOML files validate syntax.
-- Unknown file extensions open as plain text.
-- Users can add, rename, delete, and edit files.
-- Saves write back to the template directory.
-
-Metadata panel:
-
-- Name.
-- Description.
-- Work type.
-- Version.
-- Source type.
-- File count.
-- Last modified time.
-
-Actions:
-
-- Duplicate template.
-- Export is deferred.
-- Delete template with confirmation.
-- Repair references is optional and may be deferred.
-
-## Health Checks
-
-Harness health checks are advisory. They warn users about template issues but do not forcibly rewrite user-edited files.
-
-Checks:
-
-- `AGENTS.md` exists.
-- `docs/harness.toml` exists.
-- `docs/harness.toml` parses as TOML.
-- Manifest required files exist.
-- Standard JSON files parse as JSON.
-- Standard TOML files parse as TOML.
-- `AGENTS.md` appears to reference selected standard supporting files.
-
-Missing references in `AGENTS.md` should be warnings, not hard errors. The user may intentionally structure instructions differently after creation.
+- Missing `AGENTS.md` or `docs/harness.toml`.
+- Invalid TOML or JSON.
+- Manifest-required file absence.
+- Missing references from `AGENTS.md` to files initially generated by the preset.
 
 ## Storage
 
-Harness templates are stored as directories under a global AgentForge data path, for example:
+Templates are stored as managed directories under the global AgentForge data path:
 
 ```text
 ~/.agent-forge/harnesses/
-  code-work-standard/
+  5c91f4d0-8da2-4d89-a469-fd2d8f1db0ad/
     AGENTS.md
     docs/
       harness.toml
-      architecture.md
-      verification.md
+      task-status.md
+      session-handoff.md
 ```
 
-SQLite stores index and UI metadata:
-
-- Template ID.
-- Display name.
-- Description.
-- Work type.
-- Source type.
-- Source path for local imports when useful.
-- Created time.
-- Updated time.
-- Favorite or pinned state if implemented.
-
-The file package remains the source of truth for template content.
-
-## Frontend Surface
-
-Global Harness page:
-
-- Empty state with `Create Harness` and `Import Harness`.
-- Search by name and description.
-- Filter by work type.
-- Template cards or table rows showing name, work type, file count, source, and health state.
-- Detail editor for selected template.
-
-Creation modal or full-screen wizard:
-
-- Work type cards.
-- Metadata fields.
-- Optional file checklist.
-- Generated file preview.
-
-Import modal:
-
-- Import from local directory.
-- Create from current project.
-- Inspection result before import.
+SQLite indexes template ID, display name, description, work type, preset provenance, source metadata, timestamps, and optional UI-only state. The file package remains the source of truth for generated content.
 
 ## Backend and IPC Direction
 
-Future implementation should add a Harness domain model and thin Tauri commands around filesystem-backed operations.
-
-Candidate commands:
+The implementation adds a read-only preset query and changes creation to accept a preset selection rather than user-supplied ID and arbitrary initial content:
 
 ```rust
-get_harness_templates() -> Vec<HarnessTemplateSummary>
-inspect_harness_import(source_path: String) -> HarnessImportInspection
-import_harness_from_folder(source_path: String, options: HarnessImportOptions) -> HarnessTemplate
-extract_harness_from_project(project_id: String, options: HarnessExtractOptions) -> HarnessTemplate
+get_harness_presets() -> Vec<HarnessPreset>
 create_harness_template(input: CreateHarnessTemplateInput) -> HarnessTemplate
-get_harness_template(template_id: String) -> HarnessTemplateDetail
-read_harness_file(template_id: String, path: String) -> HarnessFile
-write_harness_file(template_id: String, path: String, content: String) -> HarnessFile
-create_harness_file(template_id: String, path: String, kind: String) -> HarnessFile
-delete_harness_file(template_id: String, path: String) -> ()
-delete_harness_template(template_id: String) -> ()
-validate_harness_template(template_id: String) -> HarnessValidationReport
 ```
 
-Commands should prevent path traversal and should only operate inside managed Harness template directories unless importing from an explicitly selected source.
+The creation input contains `name`, `description`, `work_type`, optional `preset_id`, and the final selected supporting-file paths. The backend validates that the preset belongs to the selected work type, generates the ID, creates files from the registry skeletons, and persists the immutable provenance.
 
-## Deferred
-
-- Applying a Harness template to a project.
-- Project-level selection of active Harness.
-- Writing `AGENTS.md` and `docs/` files into project repositories.
-- Diff preview for project application.
-- Agent runtime launch or task execution.
-- Skills, MCP, or Agent profile binding.
-- Git, URL, archive, and marketplace import.
-- Remote updates and version synchronization.
-- Runtime enforcement of permissions or verification commands.
-- Markdown rich preview and collaborative editing.
+Existing read, write, add file, delete file, import, extraction, duplicate, and validation commands remain, updated to preserve the new manifest fields.
 
 ## Acceptance Criteria
 
-- Users can create a Harness template through the wizard.
-- Created templates always include `AGENTS.md` and `docs/harness.toml`.
-- Users can choose standard optional files during creation.
-- Users can import a local directory containing `AGENTS.md`.
-- Users can extract a template from the current project without mutating the project.
-- Users can edit, add, delete, and save template files.
-- JSON and TOML syntax errors are surfaced in the editor or health panel.
-- The template list supports search and work-type filtering.
-- Health checks identify missing required files and invalid manifest syntax.
-- No first-release UI implies that templates are already applied to projects or used to run agents.
+- The wizard exposes exactly four work types.
+- Code Work offers Feature Development, Code Review, and Technical Design.
+- Document Work offers Professional Report and Academic Paper.
+- Presentation Work offers Presentation Briefing.
+- Custom Work offers no preset and a full standard-file library.
+- Built-in preset definitions come only from the backend registry.
+- The wizard does not ask the user to enter a template ID.
+- Created manifest files contain a system-generated stable ID, immutable work type, and optional preset provenance.
+- The created package always includes `AGENTS.md` and `docs/harness.toml`.
+- The generated AGENTS file references every selected supporting file and includes startup, scope, verification, and handoff rules.
+- Users may edit all generated content and add or delete files after creation.
+- Users cannot change a template's work type or preset provenance after creation.
+- Health checks remain advisory and do not rewrite user-owned files.

@@ -91,7 +91,10 @@ pub trait SkillRepository: Send + Sync {
 
 pub trait HarnessRepository: Send + Sync {
     fn get_harnesses(&self) -> DomainResult<Vec<crate::domain::harness::HarnessTemplateSummary>>;
-    fn save_harness(&self, summary: &crate::domain::harness::HarnessTemplateSummary) -> DomainResult<()>;
+    fn save_harness(
+        &self,
+        summary: &crate::domain::harness::HarnessTemplateSummary,
+    ) -> DomainResult<()>;
     fn delete_harness(&self, id: &str) -> DomainResult<()>;
 }
 

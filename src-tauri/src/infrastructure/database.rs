@@ -6,7 +6,7 @@ use rusqlite::OptionalExtension;
 
 use crate::domain::error::{DomainError, DomainResult};
 use crate::domain::health::{DatabasePort, DatabaseStatus};
-use crate::domain::ports::{SkillRepository, HarnessRepository};
+use crate::domain::ports::{HarnessRepository, SkillRepository};
 use crate::domain::project::Project;
 use crate::domain::skill::{Category, SkillPackageRecord, SourceKind, UserSkillMeta};
 
@@ -16,6 +16,8 @@ const SKILL_PACKAGES_MIGRATION: &str = include_str!("../../migrations/003_skill_
 const SKILL_DESCRIPTIONS_MIGRATION: &str =
     include_str!("../../migrations/004_skill_descriptions.sql");
 const HARNESSES_MIGRATION: &str = include_str!("../../migrations/005_harness_templates.sql");
+const HARNESS_PRESET_MIGRATION: &str =
+    include_str!("../../migrations/006_harness_template_preset.sql");
 
 pub struct SqliteDatabase {
     connection: Mutex<Connection>,
@@ -51,6 +53,28 @@ impl SqliteDatabase {
         connection
             .execute_batch(HARNESSES_MIGRATION)
             .map_err(database_error)?;
+        let has_preset_column = {
+            let mut statement = connection
+                .prepare("PRAGMA table_info(harness_templates)")
+                .map_err(database_error)?;
+            let columns = statement
+                .query_map([], |row| row.get::<_, String>(1))
+                .map_err(database_error)?;
+            columns
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(database_error)?
+                .iter()
+                .any(|column| column == "created_from_preset")
+        };
+        if !has_preset_column {
+            connection
+                .execute_batch(HARNESS_PRESET_MIGRATION)
+                .map_err(database_error)?;
+        } else {
+            connection
+                .execute("INSERT OR IGNORE INTO _migrations (version) VALUES (6)", [])
+                .map_err(database_error)?;
+        }
         Ok(Self {
             connection: Mutex::new(connection),
         })
@@ -684,7 +708,7 @@ impl HarnessRepository for SqliteDatabase {
             .lock()
             .map_err(|error| DomainError::Database(error.to_string()))?;
         let mut stmt = connection
-            .prepare("SELECT id, name, description, work_type, source_type, source_path, created_at, updated_at FROM harness_templates ORDER BY created_at ASC")
+            .prepare("SELECT id, name, description, work_type, created_from_preset, source_type, source_path, created_at, updated_at FROM harness_templates ORDER BY created_at ASC")
             .map_err(database_error)?;
 
         let iter = stmt
@@ -694,10 +718,11 @@ impl HarnessRepository for SqliteDatabase {
                     name: r.get(1)?,
                     description: r.get(2)?,
                     work_type: r.get(3)?,
-                    source_type: r.get(4)?,
-                    source_path: r.get(5)?,
-                    created_at: r.get(6)?,
-                    updated_at: r.get(7)?,
+                    created_from_preset: r.get(4)?,
+                    source_type: r.get(5)?,
+                    source_path: r.get(6)?,
+                    created_at: r.get(7)?,
+                    updated_at: r.get(8)?,
                     file_count: 0,
                     has_agents_md: false,
                     has_manifest: false,
@@ -713,19 +738,23 @@ impl HarnessRepository for SqliteDatabase {
         Ok(list)
     }
 
-    fn save_harness(&self, summary: &crate::domain::harness::HarnessTemplateSummary) -> DomainResult<()> {
+    fn save_harness(
+        &self,
+        summary: &crate::domain::harness::HarnessTemplateSummary,
+    ) -> DomainResult<()> {
         let connection = self
             .connection
             .lock()
             .map_err(|error| DomainError::Database(error.to_string()))?;
         connection
             .execute(
-                "INSERT INTO harness_templates (id, name, description, work_type, source_type, source_path, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                "INSERT INTO harness_templates (id, name, description, work_type, created_from_preset, source_type, source_path, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
                  ON CONFLICT(id) DO UPDATE SET
                    name = excluded.name,
                    description = excluded.description,
                    work_type = excluded.work_type,
+                   created_from_preset = excluded.created_from_preset,
                    source_type = excluded.source_type,
                    source_path = excluded.source_path,
                    updated_at = excluded.updated_at",
@@ -734,6 +763,7 @@ impl HarnessRepository for SqliteDatabase {
                     summary.name,
                     summary.description,
                     summary.work_type,
+                    summary.created_from_preset,
                     summary.source_type,
                     summary.source_path,
                     summary.created_at,
@@ -763,7 +793,7 @@ fn database_error(error: rusqlite::Error) -> DomainError {
 #[cfg(test)]
 mod tests {
     use crate::domain::health::{DatabasePort, DatabaseStatus};
-    use crate::domain::ports::{SkillRepository, HarnessRepository};
+    use crate::domain::ports::{HarnessRepository, SkillRepository};
     use crate::domain::skill::{SkillPackageRecord, SourceKind};
 
     use super::SqliteDatabase;
@@ -793,6 +823,7 @@ mod tests {
             name: "Test Harness".into(),
             description: "Test Description".into(),
             work_type: "code".into(),
+            created_from_preset: Some("code-feature-development".into()),
             source_type: "local".into(),
             source_path: None,
             created_at: "2026-07-09T00:00:00Z".into(),
@@ -810,6 +841,10 @@ mod tests {
         assert_eq!(list[0].name, "Test Harness");
         assert_eq!(list[0].description, "Test Description");
         assert_eq!(list[0].work_type, "code");
+        assert_eq!(
+            list[0].created_from_preset.as_deref(),
+            Some("code-feature-development")
+        );
         assert_eq!(list[0].source_type, "local");
 
         // Delete

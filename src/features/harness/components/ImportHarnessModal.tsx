@@ -30,7 +30,6 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
   const [folderPath, setFolderPath] = useState('');
   const [inspecting, setInspecting] = useState(false);
   const [inspectionResult, setInspectionResult] = useState<any>(null);
-  const [importId, setImportId] = useState('');
   const [importName, setImportName] = useState('');
   const [importDesc, setImportDesc] = useState('');
   const [importWorkType, setImportWorkType] = useState('code');
@@ -38,7 +37,6 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
   // Extract states
   const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId || '');
   const [selectedFiles, setSelectedFiles] = useState<string[]>(['AGENTS.md', 'docs/harness.toml']);
-  const [extractId, setExtractId] = useState('');
   const [extractName, setExtractName] = useState('');
   const [extractDesc, setExtractDesc] = useState('');
   const [extractWorkType, setExtractWorkType] = useState('code');
@@ -62,10 +60,8 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
       // Auto fill form based on inspection metadata
       setImportName(res.name || '');
       setImportDesc(res.description || '');
-      setImportWorkType(res.workType || 'code');
-      // Suggest ID from folder name
-      const suggestedId = folderPath.trim().replace(/\\/g, '/').split('/').pop() || 'imported-harness';
-      setImportId(suggestedId.toLowerCase().replace(/[^a-z0-9-_]/g, '-'));
+      const discoveredWorkType = res.workType ?? '';
+      setImportWorkType(['code', 'document', 'presentation', 'custom'].includes(discoveredWorkType) ? discoveredWorkType : 'custom');
     } catch (err: any) {
       alert(`检查失败: ${err.message || String(err)}`);
     } finally {
@@ -74,16 +70,11 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
   };
 
   const handleFolderImportSubmit = () => {
-    if (!importId.trim() || !importName.trim()) {
-      alert('请填写 ID 和显示名称！');
-      return;
-    }
-    if (!/^[a-z0-9-_]+$/.test(importId.trim())) {
-      alert('ID 格式不合法，只能包含小写字母、数字、- 和 _');
+    if (!importName.trim()) {
+      alert('请填写显示名称！');
       return;
     }
     onImportFolder(folderPath.trim(), {
-      id: importId.trim(),
       name: importName.trim(),
       description: importDesc.trim(),
       workType: importWorkType,
@@ -101,16 +92,11 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
       alert('请选择要提取的源项目！');
       return;
     }
-    if (!extractId.trim() || !extractName.trim()) {
-      alert('请填写 ID 和显示名称！');
-      return;
-    }
-    if (!/^[a-z0-9-_]+$/.test(extractId.trim())) {
-      alert('ID 格式不合法，只能包含小写字母、数字、- 和 _');
+    if (!extractName.trim()) {
+      alert('请填写显示名称！');
       return;
     }
     onExtractProject(selectedProjectId, {
-      id: extractId.trim(),
       name: extractName.trim(),
       description: extractDesc.trim(),
       workType: extractWorkType,
@@ -196,15 +182,6 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', borderTop: '1px solid var(--color-outline)', paddingTop: 'var(--space-2)' }}>
                   <div className="harness-form-group">
-                    <label htmlFor="imp-id">模板唯一 ID (磁盘文件夹名)</label>
-                    <input
-                      id="imp-id"
-                      value={importId}
-                      onChange={(e) => setImportId(e.target.value)}
-                      placeholder="e.g. custom-import-rules"
-                    />
-                  </div>
-                  <div className="harness-form-group">
                     <label htmlFor="imp-name">显示名称</label>
                     <input
                       id="imp-name"
@@ -233,9 +210,8 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
                       onChange={(e) => setImportWorkType(e.target.value)}
                     >
                       <option value="code">Code Work (代码)</option>
-                      <option value="documentation">Documentation Work (文档)</option>
+                      <option value="document">Document Work (报告论文)</option>
                       <option value="presentation">Presentation Work (演示)</option>
-                      <option value="review">Review Work (审核)</option>
                       <option value="custom">Custom (自定义)</option>
                     </select>
                   </div>
@@ -296,15 +272,6 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', borderTop: '1px solid var(--color-outline)', paddingTop: 'var(--space-2)' }}>
               <div className="harness-form-group">
-                <label htmlFor="ext-id">模板唯一 ID</label>
-                <input
-                  id="ext-id"
-                  value={extractId}
-                  onChange={(e) => setExtractId(e.target.value)}
-                  placeholder="e.g. extracted-project-harness"
-                />
-              </div>
-              <div className="harness-form-group">
                 <label htmlFor="ext-name">显示名称</label>
                 <input
                   id="ext-name"
@@ -333,9 +300,8 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
                   onChange={(e) => setExtractWorkType(e.target.value)}
                 >
                   <option value="code">Code Work (代码)</option>
-                  <option value="documentation">Documentation Work (文档)</option>
+                  <option value="document">Document Work (报告论文)</option>
                   <option value="presentation">Presentation Work (演示)</option>
-                  <option value="review">Review Work (审核)</option>
                   <option value="custom">Custom (自定义)</option>
                 </select>
               </div>

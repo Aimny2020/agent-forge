@@ -17,6 +17,7 @@ import type {
   CreateHarnessTemplateInput,
   HarnessTemplateDetail,
   HarnessFile,
+  HarnessPreset,
   HarnessValidationReport,
 } from './types';
 
@@ -288,6 +289,14 @@ export async function getHarnessTemplates(): Promise<HarnessTemplateSummary[]> {
   }
 }
 
+export async function getHarnessPresets(): Promise<HarnessPreset[]> {
+  try {
+    return await invoke<HarnessPreset[]>('get_harness_presets');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
 export async function inspectHarnessImport(sourcePath: string): Promise<HarnessImportInspection> {
   try {
     return await invoke<HarnessImportInspection>('inspect_harness_import', { sourcePath });
@@ -396,11 +405,10 @@ export async function validateHarnessTemplate(
 
 export async function duplicateHarnessTemplate(
   templateId: string,
-  targetId: string,
   targetName: string,
 ): Promise<HarnessTemplateDetail> {
   try {
-    return await invoke<HarnessTemplateDetail>('duplicate_harness_template', { templateId, targetId, targetName });
+    return await invoke<HarnessTemplateDetail>('duplicate_harness_template', { templateId, targetName });
   } catch (error) {
     throw normalizeError(error);
   }

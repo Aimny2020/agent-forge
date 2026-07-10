@@ -14,6 +14,7 @@ import {
   inspectHarnessImport,
   importHarnessFromFolder,
   extractHarnessFromProject,
+  getHarnessPresets,
 } from '../../shared/api/tauriClient';
 import { CreateHarnessModal } from './components/CreateHarnessModal';
 import { ImportHarnessModal } from './components/ImportHarnessModal';
@@ -46,6 +47,11 @@ export function GlobalHarnessPage() {
   const { data: summaries = [], isLoading: summariesLoading, refetch: refetchSummaries } = useQuery({
     queryKey: ['harness-summaries'],
     queryFn: getHarnessTemplates,
+  });
+
+  const { data: presets = [], isLoading: presetsLoading } = useQuery({
+    queryKey: ['harness-presets'],
+    queryFn: getHarnessPresets,
   });
 
   const { data: detail, isLoading: detailLoading } = useQuery({
@@ -140,8 +146,8 @@ export function GlobalHarnessPage() {
   });
 
   const duplicateMut = useMutation({
-    mutationFn: ({ templateId, targetId, targetName }: { templateId: string; targetId: string; targetName: string }) =>
-      duplicateHarnessTemplate(templateId, targetId, targetName),
+    mutationFn: ({ templateId, targetName }: { templateId: string; targetName: string }) =>
+      duplicateHarnessTemplate(templateId, targetName),
     onSuccess: (newDetail) => {
       queryClient.invalidateQueries({ queryKey: ['harness-summaries'] });
       setSelectedTemplateId(newDetail.id);
@@ -221,18 +227,11 @@ export function GlobalHarnessPage() {
 
   const handleDuplicateTemplate = () => {
     if (!selectedTemplateId) return;
-    const targetId = prompt('请输入新副本的唯一 ID (仅限英文数字线框):');
-    if (!targetId) return;
-    if (!/^[a-z0-9-_]+$/.test(targetId)) {
-      alert('ID 格式不合法，只能包含小写字母、数字、- 和 _');
-      return;
-    }
     const targetName = prompt('请输入新副本的显示名称:');
     if (!targetName) return;
 
     duplicateMut.mutate({
       templateId: selectedTemplateId,
-      targetId,
       targetName,
     });
   };
@@ -250,9 +249,8 @@ export function GlobalHarnessPage() {
   const getWorkTypeLabel = (wt: string) => {
     switch (wt) {
       case 'code': return 'Code Work';
-      case 'documentation': return 'Doc Work';
-      case 'presentation': return 'Presentation';
-      case 'review': return 'Review Work';
+      case 'document': return 'Document Work';
+      case 'presentation': return 'Presentation Work';
       default: return 'Custom';
     }
   };
@@ -492,6 +490,10 @@ export function GlobalHarnessPage() {
                     <span className="harness-meta__kv-value">{getWorkTypeLabel(detail.workType)}</span>
                   </div>
                   <div className="harness-meta__kv-item">
+                    <span className="harness-meta__kv-label">创建预设</span>
+                    <span className="harness-meta__kv-value">{detail.createdFromPreset || 'Custom Work'}</span>
+                  </div>
+                  <div className="harness-meta__kv-item">
                     <span className="harness-meta__kv-label">来源类型</span>
                     <span className="harness-meta__kv-value">{detail.sourceType === 'project' ? '项目提取' : '本地目录'}</span>
                   </div>
@@ -611,9 +613,8 @@ export function GlobalHarnessPage() {
               >
                 <option value="all">全部工作类型</option>
                 <option value="code">Code Work (代码编写)</option>
-                <option value="documentation">Documentation Work (需求设计)</option>
+                <option value="document">Document Work (报告论文)</option>
                 <option value="presentation">Presentation Work (演示汇报)</option>
-                <option value="review">Review Work (审核方案)</option>
                 <option value="custom">Custom (自定义规格)</option>
               </select>
             </div>
@@ -690,6 +691,8 @@ export function GlobalHarnessPage() {
         <CreateHarnessModal
           onClose={() => setIsCreateOpen(false)}
           onCreate={(input) => createMut.mutate(input)}
+          presets={presets}
+          isPresetsLoading={presetsLoading}
         />
       )}
 
