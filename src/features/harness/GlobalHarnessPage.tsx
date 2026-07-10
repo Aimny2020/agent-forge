@@ -35,6 +35,11 @@ export function GlobalHarnessPage() {
   const [editorContent, setEditorContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
 
+  // File tree operations states
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
+  const [newFilePathInput, setNewFilePathInput] = useState('');
+  const [deletingFilePath, setDeletingFilePath] = useState<string | null>(null);
+
   // Queries
   const { data: summaries = [], isLoading: summariesLoading, refetch: refetchSummaries } = useQuery({
     queryKey: ['harness-summaries'],
@@ -203,30 +208,8 @@ export function GlobalHarnessPage() {
 
   const handleCreateFile = () => {
     if (!selectedTemplateId) return;
-    const relPath = prompt('请输入新文件相对路径 (例如: docs/custom-rules.md):');
-    if (!relPath) return;
-    if (relPath.startsWith('/') || relPath.includes('..')) {
-      alert('非法的相对文件路径！');
-      return;
-    }
-    const ext = relPath.split('.').pop() || '';
-    createFileMut.mutate({
-      templateId: selectedTemplateId,
-      path: relPath,
-      kind: ext,
-    });
-  };
-
-  const handleDeleteFile = (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
-    if (!selectedTemplateId) return;
-    if (path === 'AGENTS.md' || path === 'docs/harness.toml') {
-      alert('必选的基础文件不能被删除！');
-      return;
-    }
-    if (confirm(`确定要从该模板中物理删除文件 "${path}" 吗？此操作无法撤销。`)) {
-      deleteFileMut.mutate({ templateId: selectedTemplateId, path });
-    }
+    setIsCreatingFile(true);
+    setNewFilePathInput('');
   };
 
   const handleDeleteTemplate = () => {
@@ -332,12 +315,15 @@ export function GlobalHarnessPage() {
               <div className="harness-tree__list">
                 {detail.files.map((file) => {
                   const isActive = activeFilePath === file.path;
+                  const isDeletingConfirm = deletingFilePath === file.path;
                   return (
                     <div
                       key={file.path}
                       className="harness-tree__item"
                       data-active={isActive}
+                      data-deleting={isDeletingConfirm}
                       onClick={() => {
+                        if (isDeletingConfirm) return;
                         if (isDirty) {
                           if (!confirm('当前文件有未保存的修改，切换文件将丢失修改。是否继续？')) {
                             return;
@@ -351,18 +337,91 @@ export function GlobalHarnessPage() {
                         <span className="harness-tree__item-name">{file.path}</span>
                       </div>
                       {file.path !== 'AGENTS.md' && file.path !== 'docs/harness.toml' && (
-                        <button
-                          type="button"
-                          className="harness-tree__item-delete"
-                          onClick={(e) => handleDeleteFile(e, file.path)}
-                          title="删除文件"
-                        >
-                          <Trash size={12} />
-                        </button>
+                        isDeletingConfirm ? (
+                          <div className="harness-tree__confirm-actions" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              className="harness-tree__confirm-btn harness-tree__confirm-btn--yes"
+                              title="确认删除"
+                              onClick={() => {
+                                deleteFileMut.mutate({ templateId: selectedTemplateId!, path: file.path });
+                                setDeletingFilePath(null);
+                              }}
+                            >
+                              确认
+                            </button>
+                            <button
+                              type="button"
+                              className="harness-tree__confirm-btn harness-tree__confirm-btn--no"
+                              title="取消"
+                              onClick={() => setDeletingFilePath(null)}
+                            >
+                              取消
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="harness-tree__item-delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingFilePath(file.path);
+                            }}
+                            title="删除文件"
+                          >
+                            <Trash size={12} />
+                          </button>
+                        )
                       )}
                     </div>
                   );
                 })}
+
+                {isCreatingFile && (
+                  <div className="harness-tree__item harness-tree__item--creating">
+                    <div className="harness-tree__item-left" style={{ width: '100%' }}>
+                      <File size={14} color="var(--color-primary-ink)" />
+                      <input
+                        type="text"
+                        className="harness-tree__input"
+                        value={newFilePathInput}
+                        onChange={(e) => setNewFilePathInput(e.target.value)}
+                        placeholder="输入文件路径 (例: docs/rules.md)..."
+                        autoFocus
+                        onBlur={() => {
+                          setTimeout(() => {
+                            setIsCreatingFile(false);
+                            setNewFilePathInput('');
+                          }, 150);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const relPath = newFilePathInput.trim();
+                            if (!relPath) {
+                              setIsCreatingFile(false);
+                              return;
+                            }
+                            if (relPath.startsWith('/') || relPath.includes('..')) {
+                              alert('非法的相对文件路径！');
+                              return;
+                            }
+                            const ext = relPath.split('.').pop() || '';
+                            createFileMut.mutate({
+                              templateId: selectedTemplateId!,
+                              path: relPath,
+                              kind: ext,
+                            });
+                            setIsCreatingFile(false);
+                            setNewFilePathInput('');
+                          } else if (e.key === 'Escape') {
+                            setIsCreatingFile(false);
+                            setNewFilePathInput('');
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
