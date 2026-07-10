@@ -102,7 +102,7 @@ export function CreateHarnessModal({ onClose, onCreate }: CreateHarnessModalProp
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
-      <div className="modal-body" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '32rem', height: 'auto' }}>
+      <div className="modal-body" onClick={(e) => e.stopPropagation()} style={{ width: '38rem', maxWidth: '90vw', height: 'auto' }}>
         <div className="modal-header">
           <h3>新建 Harness 模板</h3>
           <button type="button" className="close-btn" onClick={onClose}>
