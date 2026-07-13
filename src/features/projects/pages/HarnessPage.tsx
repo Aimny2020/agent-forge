@@ -157,10 +157,34 @@ export function HarnessPage() {
   if (statusQuery.isError || !statusQuery.data) return <PageState state="error" title="无法读取项目 Harness" description="请确认项目目录仍然存在，然后刷新页面。" onRetry={() => void statusQuery.refetch()} />;
 
   return (
-    <div className="page-stack project-harness-page">
+    <div className="project-harness-page-container">
       <div className="project-harness-header">
-        <div><p className="eyebrow">PROJECT HARNESS</p><h2>项目 Harness</h2><p className="muted-copy">从模板创建项目副本，之后由项目独立维护。</p></div>
-        <StatusBadge tone={statusQuery.data.state === 'managed' ? 'success' : statusQuery.data.state === 'invalid' ? 'danger' : 'neutral'}>{statusLabel}</StatusBadge>
+        <div className="project-harness-header-title">
+          <h2>项目 Harness</h2>
+          <span className="project-harness-header-desc">从模板创建项目副本，之后由项目独立维护。</span>
+        </div>
+        <div className="project-harness-header-actions">
+          {(statusQuery.data.state === 'managed' || statusQuery.data.state === 'invalid') && (
+            <>
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={() => void statusQuery.refetch()}
+              >
+                <RefreshCw size={15} /> 刷新磁盘状态
+              </button>
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={() => unmanageMutation.mutate()}
+                disabled={unmanageMutation.isPending}
+              >
+                解除纳管
+              </button>
+            </>
+          )}
+          <StatusBadge tone={statusQuery.data.state === 'managed' ? 'success' : statusQuery.data.state === 'invalid' ? 'danger' : 'neutral'}>{statusLabel}</StatusBadge>
+        </div>
       </div>
 
       {statusQuery.data.state === 'absent' && (
@@ -184,7 +208,7 @@ export function HarnessPage() {
                 <div className="project-harness-preview-header"><div><span className="project-harness-kicker">SELECTED TEMPLATE</span><h3>{selectedTemplateSummary.name}</h3><p>{selectedTemplateSummary.description || '一套可直接应用到项目的 Harness 工作约束。'}</p></div><div className="project-harness-template-meta"><span>{workTypeLabel(selectedTemplateSummary.workType)}</span><span>{languageLabel(selectedTemplateSummary.language)}</span><span>{selectedTemplateSummary.fileCount} 个文件</span></div></div>
                 <div className="project-harness-preview-grid">
                   <div className="project-harness-preview-panel"><div className="project-harness-panel-heading"><div><FileCode2 size={16} /><strong>文件清单</strong></div><span>{preview?.templateFiles.length || selectedTemplateSummary.fileCount} 个文件</span></div><div className="project-harness-preview-files">{(preview?.templateFiles || []).map((file) => <div key={file.path} className={file.path === 'AGENTS.md' ? 'is-entry' : ''}><FileText size={14} /><code>{file.path}</code>{file.path === 'AGENTS.md' && <span>主入口</span>}</div>)}</div></div>
-                  <div className="project-harness-preview-panel project-harness-agents-panel"><div className="project-harness-panel-heading"><div><ShieldCheck size={16} /><strong>AGENTS.md 入口检查</strong></div>{previewQuery.isLoading ? <span>检查中...</span> : preview?.missingAgentsReferences.length ? <span className="is-danger">存在问题</span> : <span className="is-success"><CircleCheck size={14} /> 可以应用</span>}</div>{preview?.missingAgentsReferences.length ? <div className="project-harness-inline-error"><AlertCircle size={16} /><div><strong>发现缺失引用</strong>{preview.missingAgentsReferences.map((path) => <code key={path}>{path}</code>)}</div></div> : <p className="project-harness-check-copy">主入口引用的状态、验证和工作文件都能在模板中找到。</p>}{agentsFile && <details><summary>预览 AGENTS.md</summary><pre>{agentsFile.content}</pre></details>}</div>
+                  <div className="project-harness-preview-panel project-harness-agents-panel"><div className="project-harness-panel-heading"><div><ShieldCheck size={16} /><strong>AGENTS.md 入口检查</strong></div>{previewQuery.isLoading ? <span>检查中...</span> : preview?.missingAgentsReferences.length ? <span className="is-danger">存在问题</span> : <span className="is-success"><CircleCheck size={14} /> 可以应用</span>}</div>{preview?.missingAgentsReferences.length ? <div className="project-harness-inline-error"><AlertCircle size={16} /><div><strong>发现缺失引用</strong>{preview.missingAgentsReferences.map((path) => <code key={path}>{path}</code>)}</div></div> : <p className="project-harness-check-copy">主入口引用的状态、验证 and 工作文件都能在模板中找到。</p>}{agentsFile && <details><summary>预览 AGENTS.md</summary><pre>{agentsFile.content}</pre></details>}</div>
                 </div>
                 {preview?.conflicts.length ? <div className="project-harness-conflict-section"><div className="project-harness-panel-heading"><div><AlertCircle size={16} /><strong>需要处理的项目文件冲突</strong></div><span>{Object.keys(decisions).length}/{preview.conflicts.length} 已处理</span></div>{preview.conflicts.map((conflict) => <div key={conflict.path} className="project-harness-conflict-row"><div><FileText size={15} /><code>{conflict.path}</code><span>项目中已存在</span></div><div className="project-harness-conflict-actions">{(['keep', 'overwrite', 'skip'] as const).map((action) => <button type="button" key={action} className={decisions[conflict.path] === action ? 'is-selected' : ''} onClick={() => setConflictAction(conflict.path, action)}>{action === 'keep' ? '保留项目文件' : action === 'overwrite' ? '模板覆盖' : '跳过'}</button>)}</div></div>)}</div> : null}
                 <div className="project-harness-apply-footer"><div><strong>{preview?.conflicts.length ? `${Object.keys(decisions).length} 个冲突已处理` : '模板检查通过'}</strong><span>{preview?.conflicts.length ? '确认后才会写入项目目录' : '将创建独立的项目 Harness 实例'}</span></div><button type="button" className="button button--primary" disabled={!preview || hasUnresolvedConflicts || !!preview.missingAgentsReferences.length || applyMutation.isPending} onClick={() => applyMutation.mutate()}><Check size={16} />{applyMutation.isPending ? '正在应用...' : '应用到项目'}</button></div>
@@ -197,7 +221,25 @@ export function HarnessPage() {
 
       {statusQuery.data.state === 'unmanaged_detected' && <div className="project-harness-adopt-strip"><AlertCircle size={17} /><span>项目目录已有 Harness 文件，但尚未被 AgentForge 纳管。</span><button type="button" className="button button--primary" onClick={() => adoptMutation.mutate()} disabled={adoptMutation.isPending}>{adoptMutation.isPending ? '正在纳管...' : '纳管现有 Harness'}</button></div>}
 
-      {(statusQuery.data.state === 'managed' || statusQuery.data.state === 'invalid') && <ManagedHarnessEditor status={statusQuery.data} files={files} selectedFile={selectedFile} activeFile={activeFile} draft={draft} newFilePath={newFilePath} setNewFilePath={setNewFilePath} onOpenFile={(path) => void openFile(path)} onDraftChange={setDraft} onSave={() => saveMutation.mutate()} onDelete={(path) => { if (window.confirm(`确定删除 ${path} 吗？`)) deleteFileMutation.mutate(path); }} onCreate={() => createFileMutation.mutate()} onRefresh={() => void statusQuery.refetch()} onUnmanage={() => unmanageMutation.mutate()} savePending={saveMutation.isPending} deletePending={deleteFileMutation.isPending} createPending={createFileMutation.isPending} unmanagePending={unmanageMutation.isPending} />}
+      {(statusQuery.data.state === 'managed' || statusQuery.data.state === 'invalid') && (
+        <ManagedHarnessEditor
+          status={statusQuery.data}
+          files={files}
+          selectedFile={selectedFile}
+          activeFile={activeFile}
+          draft={draft}
+          newFilePath={newFilePath}
+          setNewFilePath={setNewFilePath}
+          onOpenFile={(path) => void openFile(path)}
+          onDraftChange={setDraft}
+          onSave={() => saveMutation.mutate()}
+          onDelete={(path) => { if (window.confirm(`确定删除 ${path} 吗？`)) deleteFileMutation.mutate(path); }}
+          onCreate={() => createFileMutation.mutate()}
+          savePending={saveMutation.isPending}
+          deletePending={deleteFileMutation.isPending}
+          createPending={createFileMutation.isPending}
+        />
+      )}
     </div>
   );
 }
@@ -215,17 +257,87 @@ interface ManagedHarnessEditorProps {
   onSave: () => void;
   onDelete: (path: string) => void;
   onCreate: () => void;
-  onRefresh: () => void;
-  onUnmanage: () => void;
   savePending: boolean;
   deletePending: boolean;
   createPending: boolean;
-  unmanagePending: boolean;
 }
 
-function ManagedHarnessEditor({ status, files, selectedFile, activeFile, draft, newFilePath, setNewFilePath, onOpenFile, onDraftChange, onSave, onDelete, onCreate, onRefresh, onUnmanage, savePending, deletePending, createPending, unmanagePending }: ManagedHarnessEditorProps) {
-  return <>
-    <Card><div className="project-harness-managed-header"><div><span className="project-harness-kicker">PROJECT INSTANCE</span><h3>当前项目 Harness</h3></div><div className="project-harness-managed-actions"><button type="button" className="button button--secondary" onClick={onRefresh}><RefreshCw size={15} /> 刷新磁盘状态</button><button type="button" className="button button--secondary" onClick={onUnmanage} disabled={unmanagePending}>解除纳管</button></div></div><div className="project-harness-meta"><div><span>来源模板</span><strong>{status.sourceTemplateId || '未知'}</strong></div><div><span>来源状态</span><strong>{status.sourceStatus === 'changed' ? '模板已有变化' : status.sourceStatus === 'deleted' ? '原模板已删除' : '独立项目副本'}</strong></div><div><span>应用时间</span><strong>{status.appliedAt || '未知'}</strong></div></div>{status.warnings.map((warning: string) => <p key={warning} className="project-harness-warning"><AlertCircle size={16} /> {warning}</p>)}</Card>
-    <Card><div className="project-harness-editor-layout"><div className="project-harness-file-list"><h3>Harness 文件</h3>{files.map((file) => <button type="button" key={file.path} className={selectedFile === file.path ? 'is-active' : ''} onClick={() => onOpenFile(file.path)}><FileText size={15} /><span>{file.path}</span>{file.changedSinceApply && <i title="已修改" />}</button>)}</div><div className="project-harness-editor">{activeFile ? <><div className="project-harness-editor-toolbar"><code>{activeFile.path}</code><div className="project-harness-actions"><button type="button" className="button button--primary" onClick={onSave} disabled={savePending}><Save size={15} /> 保存</button><button type="button" className="button button--secondary" disabled={deletePending} onClick={() => onDelete(activeFile.path)}>删除</button></div></div><textarea value={draft} onChange={(event) => onDraftChange(event.target.value)} spellCheck={false} aria-label={`编辑 ${activeFile.path}`} /></> : <div className="project-harness-empty-editor">选择一个 Harness 文件开始编辑。</div>}<div className="project-harness-create-file"><input value={newFilePath} onChange={(event) => setNewFilePath(event.target.value)} aria-label="新 Harness 文件路径" /><button type="button" className="button button--secondary" onClick={onCreate} disabled={!newFilePath.trim() || createPending}>新增文件</button></div></div></div></Card>
-  </>;
+function ManagedHarnessEditor({ status, files, selectedFile, activeFile, draft, newFilePath, setNewFilePath, onOpenFile, onDraftChange, onSave, onDelete, onCreate, savePending, deletePending, createPending }: ManagedHarnessEditorProps) {
+  return (
+    <Card className="project-harness-main-card">
+      <div className="project-harness-editor-layout-new">
+        {/* Column 1: Harness Files List */}
+        <div className="project-harness-file-list-new">
+          <h3>Harness 文件</h3>
+          <div className="project-harness-file-list-scroll">
+            {files.map((file) => (
+              <button type="button" key={file.path} className={selectedFile === file.path ? 'is-active' : ''} onClick={() => onOpenFile(file.path)}>
+                <FileText size={15} />
+                <span>{file.path}</span>
+                {file.changedSinceApply && <i title="已修改" />}
+              </button>
+            ))}
+          </div>
+          <div className="project-harness-create-file">
+            <input value={newFilePath} onChange={(event) => setNewFilePath(event.target.value)} aria-label="新 Harness 文件路径" />
+            <button type="button" className="button button--secondary" onClick={onCreate} disabled={!newFilePath.trim() || createPending}>新增文件</button>
+          </div>
+        </div>
+
+        {/* Column 2: Editor */}
+        <div className="project-harness-editor-new">
+          {activeFile ? (
+            <>
+              <div className="project-harness-editor-toolbar" style={{ padding: '0 0 var(--space-2) 0', borderBottom: '1px solid var(--color-outline)' }}>
+                <code>{activeFile.path}</code>
+                <div className="project-harness-actions">
+                  <button type="button" className="button button--primary" onClick={onSave} disabled={savePending}><Save size={15} /> 保存</button>
+                  <button type="button" className="button button--secondary" disabled={deletePending} onClick={() => onDelete(activeFile.path)}>删除</button>
+                </div>
+              </div>
+              <div className="project-harness-editor-textarea-new">
+                <textarea value={draft} onChange={(event) => onDraftChange(event.target.value)} spellCheck={false} aria-label={`编辑 ${activeFile.path}`} />
+              </div>
+            </>
+          ) : (
+            <div className="project-harness-empty-editor">选择一个 Harness 文件开始编辑。</div>
+          )}
+        </div>
+
+        {/* Column 3: Sidebar properties */}
+        <div className="project-harness-meta-sidebar">
+          <div className="project-harness-sidebar-section">
+            <h4>Harness 属性</h4>
+            <div className="project-harness-sidebar-kv">
+              <div className="project-harness-sidebar-kv-item">
+                <span className="project-harness-sidebar-kv-label">来源模板</span>
+                <strong className="project-harness-sidebar-kv-value">{status.sourceTemplateId || '未知'}</strong>
+              </div>
+              <div className="project-harness-sidebar-kv-item">
+                <span className="project-harness-sidebar-kv-label">来源状态</span>
+                <strong className="project-harness-sidebar-kv-value">{status.sourceStatus === 'changed' ? '模板已有变化' : status.sourceStatus === 'deleted' ? '原模板已删除' : '独立项目副本'}</strong>
+              </div>
+              <div className="project-harness-sidebar-kv-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem' }}>
+                <span className="project-harness-sidebar-kv-label">应用时间</span>
+                <strong className="project-harness-sidebar-kv-value" style={{ wordBreak: 'break-all', fontSize: '0.78rem', marginTop: '0.1rem' }}>{status.appliedAt || '未知'}</strong>
+              </div>
+            </div>
+          </div>
+          {status.warnings.length > 0 && (
+            <div className="project-harness-sidebar-section">
+              <h4>警告信息</h4>
+              <div className="project-harness-sidebar-warnings">
+                {status.warnings.map((warning: string) => (
+                  <p key={warning} className="project-harness-warning" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.35rem', margin: '0.2rem 0', color: '#a15c00', fontSize: '0.78rem', lineHeight: '1.4' }}>
+                    <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '0.15rem' }} />
+                    <span>{warning}</span>
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
 }
