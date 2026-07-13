@@ -22,8 +22,6 @@ const WORK_TYPES: { type: WorkType; name: string; description: string }[] = [
   { type: 'custom', name: 'Custom Work', description: '从最小结构开始，自由配置文件。' },
 ];
 
-const STEP_LABELS = ['工作类型', '用途预设', '基本信息', '文件配置', '结构预览'];
-
 export function CreateHarnessModal({
   onClose,
   onCreate,
@@ -43,6 +41,27 @@ export function CreateHarnessModal({
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const hasPresetStep = workType !== 'custom';
+
+  const currentStepLabels = useMemo(() => {
+    if (hasPresetStep) {
+      return ['工作类型', '用途预设', '基本信息', '文件配置', '结构预览'];
+    }
+    return ['工作类型', '基本信息', '文件配置', '结构预览'];
+  }, [hasPresetStep]);
+
+  const isRegistryLoading = useMemo(() => {
+    switch (workType) {
+      case 'code':
+        return isCodeModulesLoading || isCodeSharedFilesLoading;
+      case 'custom':
+        return isPresetsLoading || isCodeModulesLoading || isCodeSharedFilesLoading;
+      case 'document':
+      case 'presentation':
+        return isPresetsLoading;
+      default:
+        return false;
+    }
+  }, [workType, isPresetsLoading, isCodeModulesLoading, isCodeSharedFilesLoading]);
   const selectedPreset = presets.find((preset) => preset.id === presetId);
   const availablePresets = presets.filter((preset) => preset.workType === workType);
 
@@ -160,7 +179,7 @@ export function CreateHarnessModal({
         }
       }
     }
-    const metadataStep = hasPresetStep ? 3 : 2;
+    const metadataStep = currentStepLabels.length - 2;
     if (step === metadataStep && !name.trim()) {
       alert('请输入模板名称。');
       return false;
@@ -170,7 +189,7 @@ export function CreateHarnessModal({
 
   const handleNext = () => {
     if (!validateCurrentStep()) return;
-    setStep((current) => Math.min(hasPresetStep ? 5 : 4, current + 1));
+    setStep((current) => Math.min(currentStepLabels.length, current + 1));
   };
 
   const handleSubmit = () => {
@@ -184,8 +203,8 @@ export function CreateHarnessModal({
     });
   };
 
-  const previewStep = hasPresetStep ? 5 : 4;
-  const filesStep = hasPresetStep ? 4 : 3;
+  const previewStep = currentStepLabels.length;
+  const filesStep = currentStepLabels.length - 1;
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
@@ -199,7 +218,7 @@ export function CreateHarnessModal({
 
         <div className="harness-modal-content" style={{ marginTop: 'var(--space-2)' }}>
           <div className="harness-wizard-steps" aria-label="创建进度">
-            {STEP_LABELS.slice(0, hasPresetStep ? 5 : 4).map((label, index) => (
+            {currentStepLabels.map((label, index) => (
               <div
                 key={label}
                 className="harness-wizard-step"
@@ -355,7 +374,7 @@ export function CreateHarnessModal({
             {step < previewStep ? (
               <button type="button" className="button button--primary" onClick={handleNext}>下一步 <ArrowRight size={16} /></button>
             ) : (
-              <button type="button" className="button button--primary" onClick={handleSubmit} disabled={!name.trim()}>确认创建</button>
+              <button type="button" className="button button--primary" onClick={handleSubmit} disabled={!name.trim() || isRegistryLoading}>确认创建</button>
             )}
           </div>
         </div>
