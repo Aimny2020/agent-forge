@@ -502,22 +502,26 @@ fn project_file(
 }
 
 fn agents_references(content: &str) -> Vec<String> {
-    content
-        .lines()
-        .filter_map(|line| {
-            let start = line.find("docs/")?;
-            let value = &line[start..];
-            let end = value
-                .find(|c: char| c == '`' || c.is_whitespace() || c == ')' || c == '，')
-                .unwrap_or(value.len());
-            let path = &value[..end];
-            if path.ends_with(".md") || path.ends_with(".json") || path.ends_with(".toml") {
-                Some(path.into())
-            } else {
-                None
+    let mut references = Vec::new();
+    for line in content.lines() {
+        for (index, segment) in line.split('`').enumerate() {
+            if index % 2 == 0 {
+                continue;
             }
-        })
-        .collect()
+            let path = segment.trim_matches(|character: char| {
+                matches!(
+                    character,
+                    ' ' | '\t' | ')' | '）' | '，' | '。' | '；' | ';' | ':' | '：' | ','
+                )
+            });
+            if path.starts_with("docs/")
+                && (path.ends_with(".md") || path.ends_with(".json") || path.ends_with(".toml"))
+            {
+                references.push(path.into());
+            }
+        }
+    }
+    references
 }
 
 fn content_hash(content: &[u8]) -> String {
@@ -717,5 +721,19 @@ mod tests {
         let status = service.get_status("p1").unwrap();
         assert_eq!(status.state, "unmanaged_detected");
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn agents_references_strip_markdown_punctuation() {
+        let content = "阅读 `docs/task-status.md`。然后检查 `docs/verification.md`；最后查看 `docs/risk-rules.md`。";
+
+        assert_eq!(
+            agents_references(content),
+            vec![
+                "docs/task-status.md",
+                "docs/verification.md",
+                "docs/risk-rules.md"
+            ]
+        );
     }
 }
