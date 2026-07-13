@@ -134,6 +134,14 @@ export interface HarnessPreset {
   files: HarnessPresetFile[];
 }
 
+export interface CodeWorkModule {
+  id: string;
+  name: string;
+  description: string;
+  files: HarnessPresetFile[];
+  agentInstructions: string;
+}
+
 export interface HarnessManifest {
   id: string;
   name: string;

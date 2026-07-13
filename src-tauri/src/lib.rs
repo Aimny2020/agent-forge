@@ -83,7 +83,9 @@ pub fn run() {
             delete_harness_file,
             delete_harness_template,
             validate_harness_template,
-            duplicate_harness_template
+            duplicate_harness_template,
+            get_code_work_modules,
+            get_code_work_shared_files
         ])
         .run(tauri::generate_context!())
         .expect("failed to run AgentForge");

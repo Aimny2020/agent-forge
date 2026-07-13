@@ -18,7 +18,9 @@ import type {
   HarnessTemplateDetail,
   HarnessFile,
   HarnessPreset,
+  HarnessPresetFile,
   HarnessValidationReport,
+  CodeWorkModule,
 } from './types';
 
 export class AppError extends Error {
@@ -292,6 +294,22 @@ export async function getHarnessTemplates(): Promise<HarnessTemplateSummary[]> {
 export async function getHarnessPresets(): Promise<HarnessPreset[]> {
   try {
     return await invoke<HarnessPreset[]>('get_harness_presets');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getCodeWorkModules(): Promise<CodeWorkModule[]> {
+  try {
+    return await invoke<CodeWorkModule[]>('get_code_work_modules');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getCodeWorkSharedFiles(): Promise<HarnessPresetFile[]> {
+  try {
+    return await invoke<HarnessPresetFile[]>('get_code_work_shared_files');
   } catch (error) {
     throw normalizeError(error);
   }

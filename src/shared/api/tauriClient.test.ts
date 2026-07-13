@@ -11,6 +11,8 @@ vi.mock('@tauri-apps/api/core', () => ({
 import {
   AppError,
   checkSkillUpdates,
+  getCodeWorkModules,
+  getCodeWorkSharedFiles,
   getHarnessPresets,
   getHealth,
   inspectSkillImport,
@@ -83,5 +85,19 @@ describe('tauriClient', () => {
 
     await expect(getHarnessPresets()).resolves.toEqual([]);
     expect(invokeMock).toHaveBeenCalledWith('get_harness_presets');
+  });
+
+  it('loads the backend-owned Code Work module registry', async () => {
+    invokeMock.mockResolvedValue([]);
+
+    await expect(getCodeWorkModules()).resolves.toEqual([]);
+    expect(invokeMock).toHaveBeenCalledWith('get_code_work_modules');
+  });
+
+  it('loads the backend-owned Code Work shared file library', async () => {
+    invokeMock.mockResolvedValue([]);
+
+    await expect(getCodeWorkSharedFiles()).resolves.toEqual([]);
+    expect(invokeMock).toHaveBeenCalledWith('get_code_work_shared_files');
   });
 });
