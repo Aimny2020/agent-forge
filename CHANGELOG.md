@@ -8,6 +8,12 @@
 
 - 完成内部预览安装验证后评估 Linux 构建、正式代码签名和自动更新。
 
+## [0.2.1] - 2026-07-13
+
+### 变更
+
+- 改进项目 Harness 的导航、编辑布局、文件扫描范围与切换状态管理。
+
 ## [0.1.0] - 2026-07-07
 
 ### 新增
@@ -28,5 +34,6 @@
 - Windows 安装包未签名。
 - 暂不提供 Linux、MSI、移动端和自动更新支持。
 
-[Unreleased]: https://github.com/Aimny2020/agent-forge/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Aimny2020/agent-forge/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Aimny2020/agent-forge/releases/tag/v0.2.1
 [0.1.0]: https://github.com/Aimny2020/agent-forge/releases/tag/v0.1.0
