@@ -1069,7 +1069,8 @@ impl HarnessService {
         if let Some(ref m) = manifest {
             if m.work_type == "code" {
                 if m.selected_modules.is_empty() {
-                    warnings.push("Code Work manifest has no selected modules".into());
+                    warnings
+                        .push("Legacy template: Code Work manifest has no selected modules".into());
                 }
 
                 let mut seen = std::collections::HashSet::new();
@@ -1096,7 +1097,8 @@ impl HarnessService {
                                     "Missing dedicated file '{}' for module '{}'",
                                     mod_file.path, mod_id
                                 ));
-                            } else if let Some(ref content) = agents_content {
+                            }
+                            if let Some(ref content) = agents_content {
                                 if !content.contains(&mod_file.path) {
                                     warnings.push(format!(
                                         "AGENTS.md does not reference dedicated file '{}' for module '{}'",
@@ -1107,10 +1109,11 @@ impl HarnessService {
                         }
 
                         if let Some(ref content) = agents_content {
-                            if !content.contains(&module.name) && !content.contains(&module.id) {
+                            let role_heading = format!("## {} Role", module.name);
+                            if !content.contains(&role_heading) {
                                 warnings.push(format!(
-                                    "AGENTS.md does not reference selected module '{}'",
-                                    module.name
+                                    "AGENTS.md does not contain role heading '{}' for module '{}'",
+                                    role_heading, mod_id
                                 ));
                             }
                         }
@@ -2055,6 +2058,138 @@ mod tests {
                 .to_string()
                 .contains("Cannot select modules for document work")
                 || error.to_string().contains("modules")
+        );
+    }
+
+    #[test]
+    fn test_legacy_import_without_modules() {
+        let fixture = TempFixture::new();
+        let repo = Arc::new(MockHarnessRepo {
+            items: Mutex::new(Vec::new()),
+        });
+        let proj_repo = Arc::new(MockSkillRepo);
+        let service = HarnessService::with_harnesses_dir(repo, proj_repo, fixture.0.clone());
+
+        // Create a fake legacy folder with AGENTS.md and docs/harness.toml
+        let legacy_src = fixture.0.join("legacy_src");
+        fs::create_dir_all(&legacy_src).unwrap();
+        fs::create_dir_all(legacy_src.join("docs")).unwrap();
+        fs::write(
+            legacy_src.join("AGENTS.md"),
+            "# Agent Workspace Instructions\n\nLegacy agents",
+        )
+        .unwrap();
+        fs::write(
+            legacy_src.join("docs").join("harness.toml"),
+            r#"id = "legacy-id"
+name = "Legacy Template"
+version = "1.0.0"
+description = "Legacy test template"
+work_type = "code"
+selected_modules = []
+source = "local"
+required_files = ["AGENTS.md", "docs/harness.toml"]
+files = []
+"#,
+        )
+        .unwrap();
+
+        let options = HarnessImportOptions {
+            name: "Legacy Imported Template".into(),
+            description: "A legacy imported description".into(),
+            work_type: "code".into(),
+            preset_id: None,
+        };
+
+        let detail = service
+            .import_harness_from_folder(legacy_src.to_str().unwrap(), options)
+            .unwrap();
+        assert_eq!(detail.selected_modules.len(), 0);
+        assert!(detail.validation.is_valid); // It is a legacy template, so it should be valid
+        assert!(
+            detail
+                .validation
+                .warnings
+                .iter()
+                .any(|w| w.to_lowercase().contains("legacy")),
+            "Expected legacy warning when selected_modules is empty, got warnings: {:?}",
+            detail.validation.warnings
+        );
+    }
+
+    #[test]
+    fn test_validation_warning_missing_module_file_and_heading() {
+        let fixture = TempFixture::new();
+        let repo = Arc::new(MockHarnessRepo {
+            items: Mutex::new(Vec::new()),
+        });
+        let proj_repo = Arc::new(MockSkillRepo);
+        let service = HarnessService::with_harnesses_dir(repo, proj_repo, fixture.0.clone());
+
+        // Create a composed Code template
+        let input = CreateHarnessTemplateInput {
+            name: "Composed Code Template".into(),
+            description: "Test description".into(),
+            work_type: "code".into(),
+            preset_id: None,
+            selected_modules: vec!["code-review".into()],
+            optional_files: vec![
+                "docs/review-rubric.md".into(),
+                "docs/review-findings.md".into(),
+            ],
+        };
+
+        let detail = service.create_harness_template(input).unwrap();
+        assert!(detail.validation.is_valid);
+        assert!(detail.validation.warnings.is_empty());
+
+        // Now remove docs/review-findings.md
+        let findings_path = fixture.0.join(&detail.id).join("docs/review-findings.md");
+        fs::remove_file(findings_path).unwrap();
+
+        // Run validation
+        let report = service.validate_harness_template(&detail.id).unwrap();
+
+        // Assert the warning exists, contains "code-review", and contains the missing path "docs/review-findings.md"
+        let mut found_warning = false;
+        for warning in &report.warnings {
+            if warning.contains("code-review") && warning.contains("docs/review-findings.md") {
+                found_warning = true;
+            }
+        }
+        assert!(found_warning, "Expected warning about missing docs/review-findings.md for code-review module, got: {:?}", report.warnings);
+
+        // Modify AGENTS.md to remove the heading "## Code Review Role" and the path "docs/review-rubric.md"
+        let agents_path = fixture.0.join(&detail.id).join("AGENTS.md");
+        let agents_content = fs::read_to_string(&agents_path).unwrap();
+        let updated_content = agents_content
+            .replace("## Code Review Role", "")
+            .replace("docs/review-rubric.md", "");
+        fs::write(&agents_path, updated_content).unwrap();
+
+        // Run validation again
+        let report2 = service.validate_harness_template(&detail.id).unwrap();
+
+        // Assert warning about missing heading "## Code Review Role"
+        let found_heading_warning = report2
+            .warnings
+            .iter()
+            .any(|w| w.contains("heading") && w.contains("Code Review Role"));
+        assert!(
+            found_heading_warning,
+            "Expected warning about missing heading '## Code Review Role', got: {:?}",
+            report2.warnings
+        );
+
+        // Assert warning about missing dedicated path reference
+        let found_path_warning = report2
+            .warnings
+            .iter()
+            .any(|w| w.contains("reference") && w.contains("docs/review-rubric.md"));
+        assert!(
+            found_path_warning,
+            "Expected warning about missing reference to 'docs/review-rubric.md', got: {:?}",
+            report2.warnings
         );
     }
 }

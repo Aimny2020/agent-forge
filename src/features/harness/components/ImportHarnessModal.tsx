@@ -74,6 +74,8 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
       alert('请填写显示名称！');
       return;
     }
+    // NOTE: Module selectors are not presented in the import modal in this iteration
+    // as legacy templates or imports without modules are allowed to retain an empty list.
     onImportFolder(folderPath.trim(), {
       name: importName.trim(),
       description: importDesc.trim(),
