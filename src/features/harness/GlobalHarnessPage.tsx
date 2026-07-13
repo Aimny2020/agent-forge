@@ -15,6 +15,8 @@ import {
   importHarnessFromFolder,
   extractHarnessFromProject,
   getHarnessPresets,
+  getCodeWorkModules,
+  getCodeWorkSharedFiles,
 } from '../../shared/api/tauriClient';
 import { CreateHarnessModal } from './components/CreateHarnessModal';
 import { ImportHarnessModal } from './components/ImportHarnessModal';
@@ -52,6 +54,16 @@ export function GlobalHarnessPage() {
   const { data: presets = [], isLoading: presetsLoading } = useQuery({
     queryKey: ['harness-presets'],
     queryFn: getHarnessPresets,
+  });
+
+  const { data: codeModules = [], isLoading: codeModulesLoading } = useQuery({
+    queryKey: ['code-work-modules'],
+    queryFn: getCodeWorkModules,
+  });
+
+  const { data: codeSharedFiles = [], isLoading: codeSharedFilesLoading } = useQuery({
+    queryKey: ['code-work-shared-files'],
+    queryFn: getCodeWorkSharedFiles,
   });
 
   const { data: detail, isLoading: detailLoading } = useQuery({
@@ -489,10 +501,31 @@ export function GlobalHarnessPage() {
                     <span className="harness-meta__kv-label">工作类型</span>
                     <span className="harness-meta__kv-value">{getWorkTypeLabel(detail.workType)}</span>
                   </div>
-                  <div className="harness-meta__kv-item">
-                    <span className="harness-meta__kv-label">创建预设</span>
-                    <span className="harness-meta__kv-value">{detail.createdFromPreset || 'Custom Work'}</span>
-                  </div>
+                  {detail.workType === 'code' ? (
+                    <div className="harness-meta__kv-item" style={{ flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                      <span className="harness-meta__kv-label">启用模块</span>
+                      <div className="harness-meta__modules-list">
+                        {detail.selectedModules && detail.selectedModules.length > 0 ? (
+                          detail.selectedModules.map((modId) => {
+                            const mod = codeModules.find((m) => m.id === modId);
+                            const displayName = mod ? mod.name : modId;
+                            return (
+                              <span key={modId} className="harness-meta__module-tag">
+                                {displayName}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>无模块</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="harness-meta__kv-item">
+                      <span className="harness-meta__kv-label">创建预设</span>
+                      <span className="harness-meta__kv-value">{detail.createdFromPreset || 'Custom Work'}</span>
+                    </div>
+                  )}
                   <div className="harness-meta__kv-item">
                     <span className="harness-meta__kv-label">来源类型</span>
                     <span className="harness-meta__kv-value">{detail.sourceType === 'project' ? '项目提取' : '本地目录'}</span>
@@ -693,6 +726,10 @@ export function GlobalHarnessPage() {
           onCreate={(input) => createMut.mutate(input)}
           presets={presets}
           isPresetsLoading={presetsLoading}
+          codeModules={codeModules}
+          isCodeModulesLoading={codeModulesLoading}
+          codeSharedFiles={codeSharedFiles}
+          isCodeSharedFilesLoading={codeSharedFilesLoading}
         />
       )}
 

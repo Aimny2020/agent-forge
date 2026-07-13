@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
-import { CreateHarnessTemplateInput, HarnessPreset } from '../../../shared/api/types';
+import { CreateHarnessTemplateInput, HarnessPreset, CodeWorkModule, HarnessPresetFile } from '../../../shared/api/types';
 
 interface CreateHarnessModalProps {
   onClose: () => void;
   onCreate: (input: CreateHarnessTemplateInput) => void;
   presets: HarnessPreset[];
   isPresetsLoading?: boolean;
+  codeModules?: CodeWorkModule[];
+  isCodeModulesLoading?: boolean;
+  codeSharedFiles?: HarnessPresetFile[];
+  isCodeSharedFilesLoading?: boolean;
 }
 
 type WorkType = 'code' | 'document' | 'presentation' | 'custom';
@@ -25,10 +29,15 @@ export function CreateHarnessModal({
   onCreate,
   presets,
   isPresetsLoading = false,
+  codeModules = [],
+  isCodeModulesLoading = false,
+  codeSharedFiles = [],
+  isCodeSharedFilesLoading = false,
 }: CreateHarnessModalProps) {
   const [step, setStep] = useState(1);
   const [workType, setWorkType] = useState<WorkType>('code');
   const [presetId, setPresetId] = useState<string | undefined>();
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -36,22 +45,99 @@ export function CreateHarnessModal({
   const hasPresetStep = workType !== 'custom';
   const selectedPreset = presets.find((preset) => preset.id === presetId);
   const availablePresets = presets.filter((preset) => preset.workType === workType);
-  const allStandardFiles = useMemo(() => {
-    const files = new Map<string, HarnessPreset['files'][number]>();
-    presets.forEach((preset) => preset.files.forEach((file) => files.set(file.path, file)));
-    return [...files.values()];
-  }, [presets]);
-  const fileOptions = selectedPreset?.files ?? allStandardFiles;
+
+  // Preselect docs/ paths in codeSharedFiles when they load or when workType changes to code
+  useEffect(() => {
+    if (workType === 'code' && codeSharedFiles.length > 0 && selectedModules.length === 0 && selectedFiles.length === 0) {
+      const preselected = codeSharedFiles
+        .filter((f) => f.path.startsWith('docs/'))
+        .map((f) => f.path);
+      setSelectedFiles(preselected);
+    }
+  }, [workType, codeSharedFiles, selectedModules]);
+
+  const fileOptions = useMemo(() => {
+    if (workType === 'code') {
+      const filesMap = new Map<string, HarnessPresetFile>();
+      codeSharedFiles.forEach((f) => filesMap.set(f.path, f));
+      selectedModules.forEach((modId) => {
+        const mod = codeModules.find((m) => m.id === modId);
+        mod?.files.forEach((f) => filesMap.set(f.path, f));
+      });
+      return Array.from(filesMap.values());
+    }
+
+    if (workType === 'custom') {
+      const filesMap = new Map<string, HarnessPresetFile>();
+      presets.forEach((preset) => {
+        preset.files.forEach((f) => filesMap.set(f.path, f));
+      });
+      codeSharedFiles.forEach((f) => filesMap.set(f.path, f));
+      codeModules.forEach((mod) => {
+        mod.files.forEach((f) => filesMap.set(f.path, f));
+      });
+      return Array.from(filesMap.values());
+    }
+
+    // document or presentation
+    return selectedPreset?.files ?? [];
+  }, [workType, selectedPreset, presets, codeModules, codeSharedFiles, selectedModules]);
 
   const chooseWorkType = (type: WorkType) => {
     setWorkType(type);
     setPresetId(undefined);
-    setSelectedFiles([]);
+    setSelectedModules([]);
+    if (type === 'code') {
+      const preselected = codeSharedFiles
+        .filter((f) => f.path.startsWith('docs/'))
+        .map((f) => f.path);
+      setSelectedFiles(preselected);
+    } else {
+      setSelectedFiles([]);
+    }
   };
 
   const choosePreset = (preset: HarnessPreset) => {
     setPresetId(preset.id);
     setSelectedFiles(preset.files.map((file) => file.path));
+  };
+
+  const handleToggleModule = (moduleId: string) => {
+    const isAdding = !selectedModules.includes(moduleId);
+    const nextModules = isAdding
+      ? [...selectedModules, moduleId]
+      : selectedModules.filter((id) => id !== moduleId);
+
+    const getOfferedPaths = (mods: string[]) => {
+      const paths = new Set<string>();
+      codeSharedFiles.forEach((f) => paths.add(f.path));
+      mods.forEach((modId) => {
+        const mod = codeModules.find((m) => m.id === modId);
+        mod?.files.forEach((f) => paths.add(f.path));
+      });
+      return paths;
+    };
+
+    const prevOffered = getOfferedPaths(selectedModules);
+    const nextOffered = getOfferedPaths(nextModules);
+
+    setSelectedFiles((current) => {
+      const nextSelected: string[] = [];
+      nextOffered.forEach((path) => {
+        if (prevOffered.has(path)) {
+          if (current.includes(path)) {
+            nextSelected.push(path);
+          }
+        } else {
+          if (path.startsWith('docs/')) {
+            nextSelected.push(path);
+          }
+        }
+      });
+      return nextSelected;
+    });
+
+    setSelectedModules(nextModules);
   };
 
   const toggleFile = (path: string) => {
@@ -61,9 +147,18 @@ export function CreateHarnessModal({
   };
 
   const validateCurrentStep = () => {
-    if (hasPresetStep && step === 2 && !presetId) {
-      alert('请选择一个用途预设。');
-      return false;
+    if (hasPresetStep && step === 2) {
+      if (workType === 'code') {
+        if (selectedModules.length === 0) {
+          alert('请选择至少一个 Code 模块。');
+          return false;
+        }
+      } else {
+        if (!presetId) {
+          alert('请选择一个用途预设。');
+          return false;
+        }
+      }
     }
     const metadataStep = hasPresetStep ? 3 : 2;
     if (step === metadataStep && !name.trim()) {
@@ -83,8 +178,8 @@ export function CreateHarnessModal({
       name: name.trim(),
       description: description.trim(),
       workType,
-      presetId,
-      selectedModules: [],
+      presetId: workType === 'code' ? undefined : presetId,
+      selectedModules: workType === 'code' ? selectedModules : [],
       optionalFiles: selectedFiles,
     });
   };
@@ -139,24 +234,50 @@ export function CreateHarnessModal({
 
           {hasPresetStep && step === 2 && (
             <section className="harness-wizard-panel">
-              <p className="harness-wizard-hint">选择系统维护的只读用途预设。预设决定初始文件和内容骨架。</p>
-              {isPresetsLoading ? (
-                <p>正在加载系统预设...</p>
+              {workType === 'code' ? (
+                <>
+                  <p className="harness-wizard-hint">选择要启用的 Code 模块。模块定义了初始文件和专属指令规范。</p>
+                  {isCodeModulesLoading ? (
+                    <p>正在加载系统模块...</p>
+                  ) : (
+                    <div className="harness-type-grid">
+                      {codeModules.map((module) => (
+                        <button
+                          type="button"
+                          key={module.id}
+                          className="harness-type-card"
+                          data-selected={selectedModules.includes(module.id)}
+                          onClick={() => handleToggleModule(module.id)}
+                        >
+                          <strong>{module.name}</strong>
+                          <span>{module.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="harness-type-grid">
-                  {availablePresets.map((preset) => (
-                    <button
-                      type="button"
-                      key={preset.id}
-                      className="harness-type-card"
-                      data-selected={presetId === preset.id}
-                      onClick={() => choosePreset(preset)}
-                    >
-                      <strong>{preset.name}</strong>
-                      <span>{preset.description}</span>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <p className="harness-wizard-hint">选择系统维护的只读用途预设。预设决定初始文件和内容骨架。</p>
+                  {isPresetsLoading ? (
+                    <p>正在加载系统预设...</p>
+                  ) : (
+                    <div className="harness-type-grid">
+                      {availablePresets.map((preset) => (
+                        <button
+                          type="button"
+                          key={preset.id}
+                          className="harness-type-card"
+                          data-selected={presetId === preset.id}
+                          onClick={() => choosePreset(preset)}
+                        >
+                          <strong>{preset.name}</strong>
+                          <span>{preset.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </section>
           )}
@@ -179,12 +300,37 @@ export function CreateHarnessModal({
             <section className="harness-wizard-panel">
               <p className="harness-wizard-hint">确认要生成的标准文件。预设文件默认全选，创建后仍可自由编辑、增加或删除。</p>
               <div className="harness-checklist">
-                {fileOptions.map((file) => (
-                  <label key={file.path} className="harness-checklist-item">
-                    <input type="checkbox" checked={selectedFiles.includes(file.path)} onChange={() => toggleFile(file.path)} />
-                    <span>{file.label} <small>{file.path}</small></span>
-                  </label>
-                ))}
+                {fileOptions.map((file) => {
+                  let badgeText = '';
+                  if (workType === 'code') {
+                    const contributors: string[] = [];
+                    const isShared = codeSharedFiles.some((f) => f.path === file.path);
+                    if (isShared) {
+                      contributors.push('Shared');
+                    }
+                    selectedModules.forEach((modId) => {
+                      const mod = codeModules.find((m) => m.id === modId);
+                      if (mod && mod.files.some((f) => f.path === file.path)) {
+                        contributors.push(mod.name);
+                      }
+                    });
+                    badgeText = contributors.join(', ');
+                  }
+
+                  return (
+                    <label key={file.path} className="harness-checklist-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                        <input type="checkbox" checked={selectedFiles.includes(file.path)} onChange={() => toggleFile(file.path)} />
+                        <span>{file.label} <small style={{ color: 'var(--color-muted)', marginLeft: 'var(--space-1)' }}>{file.path}</small></span>
+                      </div>
+                      {badgeText && (
+                        <span className="harness-file-contributor">
+                          {badgeText}
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -197,7 +343,9 @@ export function CreateHarnessModal({
                 <div>&nbsp; 📄 AGENTS.md <small>(必填 Agent 入口)</small></div>
                 <div>&nbsp; 📁 docs/</div>
                 <div>&nbsp;&nbsp; 📄 harness.toml <small>(必填系统元数据)</small></div>
-                {selectedFiles.map((file) => <div key={file}>&nbsp;&nbsp; 📄 {file.replace('docs/', '')}</div>)}
+                {Array.from(new Set(selectedFiles)).map((file) => (
+                  <div key={file}>&nbsp;&nbsp; 📄 {file.replace(/^docs\//, '')}</div>
+                ))}
               </div>
             </section>
           )}
