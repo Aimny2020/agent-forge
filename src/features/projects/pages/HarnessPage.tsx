@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -67,6 +67,14 @@ export function HarnessPage() {
   const [draft, setDraft] = useState('');
   const [decisions, setDecisions] = useState<Record<string, ProjectHarnessFileDecision['action']>>({});
   const [newFilePath, setNewFilePath] = useState('docs/');
+
+  useEffect(() => {
+    setSelectedTemplate('');
+    setSelectedFile('');
+    setDraft('');
+    setDecisions({});
+    setNewFilePath('docs/');
+  }, [activeProjectId]);
 
   const statusQuery = useQuery({
     queryKey: ['projectHarness', activeProjectId],
