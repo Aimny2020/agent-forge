@@ -419,12 +419,24 @@ fn restore_file(path: &Path, old: Option<&Vec<u8>>) {
 
 fn collect_files(root: &Path) -> DomainResult<Vec<ProjectHarnessFile>> {
     let mut files = Vec::new();
-    collect_files_inner(root, root, &mut files)?;
+    let agents_path = root.join("AGENTS.md");
+    if agents_path.is_file() {
+        let content =
+            fs::read_to_string(&agents_path).map_err(|e| DomainError::Database(e.to_string()))?;
+        files.push(ProjectHarnessFile {
+            path: "AGENTS.md".into(),
+            content,
+            exists: true,
+            changed_since_apply: false,
+            deletion_eligible: false,
+        });
+    }
+    collect_docs_files(root, &root.join("docs"), &mut files)?;
     files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(files)
 }
 
-fn collect_files_inner(
+fn collect_docs_files(
     root: &Path,
     current: &Path,
     files: &mut Vec<ProjectHarnessFile>,
@@ -440,23 +452,21 @@ fn collect_files_inner(
         }
         let path = entry.path();
         if path.is_dir() {
-            collect_files_inner(root, &path, files)?;
+            collect_docs_files(root, &path, files)?;
         } else {
             let relative = path
                 .strip_prefix(root)
                 .map_err(|e| DomainError::Database(e.to_string()))?;
             let relative = relative.to_string_lossy().replace('\\', "/");
-            if relative == "AGENTS.md" || relative.starts_with("docs/") {
-                let content =
-                    fs::read_to_string(&path).map_err(|e| DomainError::Database(e.to_string()))?;
-                files.push(ProjectHarnessFile {
-                    path: relative,
-                    content,
-                    exists: true,
-                    changed_since_apply: false,
-                    deletion_eligible: false,
-                });
-            }
+            let content =
+                fs::read_to_string(&path).map_err(|e| DomainError::Database(e.to_string()))?;
+            files.push(ProjectHarnessFile {
+                path: relative,
+                content,
+                exists: true,
+                changed_since_apply: false,
+                deletion_eligible: false,
+            });
         }
     }
     Ok(())
@@ -735,5 +745,26 @@ mod tests {
                 "docs/risk-rules.md"
             ]
         );
+    }
+
+    #[test]
+    fn project_harness_file_scan_does_not_enter_unrelated_project_directories() {
+        let root = std::env::temp_dir().join(format!("agentforge-scan-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(root.join("docs")).unwrap();
+        fs::create_dir_all(root.join("node_modules/dependency")).unwrap();
+        fs::write(root.join("AGENTS.md"), "# Agent").unwrap();
+        fs::write(root.join("docs/task-status.md"), "# Status").unwrap();
+        fs::write(root.join("node_modules/dependency/package.json"), "{}").unwrap();
+
+        let files = collect_files(&root).unwrap();
+
+        assert_eq!(
+            files
+                .iter()
+                .map(|file| file.path.as_str())
+                .collect::<Vec<_>>(),
+            vec!["AGENTS.md", "docs/task-status.md"]
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 }
