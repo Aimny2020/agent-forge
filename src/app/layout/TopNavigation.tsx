@@ -4,6 +4,7 @@ import { ThemeToggle } from '../../shared/theme/ThemeToggle';
 
 const navigation = [
   { label: '项目管理', to: '/projects' },
+  { label: 'Agents', to: '/agents' },
   { label: 'Skills', to: '/skills' },
   { label: 'Harness', to: '/harness' },
   { label: '设置', to: '/settings' },

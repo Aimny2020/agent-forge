@@ -15,9 +15,17 @@ import {
   getCodeWorkSharedFiles,
   getHarnessPresets,
   getHealth,
+  getLaunchPreferences,
+  getLocalAgents,
   inspectSkillImport,
   trustSkill,
   updateSkill,
+  saveLaunchPreferences,
+  launchAgent,
+  openDesktopAgent,
+  checkAgentUpdates,
+  getAgentMaintenancePlan,
+  applyAgentMaintenance,
 } from './tauriClient';
 
 describe('tauriClient', () => {
@@ -99,5 +107,49 @@ describe('tauriClient', () => {
 
     await expect(getCodeWorkSharedFiles()).resolves.toEqual([]);
     expect(invokeMock).toHaveBeenCalledWith('get_code_work_shared_files');
+  });
+
+  it('loads and saves platform launch preferences with a typed payload', async () => {
+    const preferences = {
+      macosTerminal: 'iterm' as const,
+      windowsTerminal: 'windows_terminal' as const,
+      launchPresentation: 'new_tab' as const,
+      showCommandPreview: true,
+      checkEnvironment: true,
+      checkPermissions: true,
+      allowCopyCommandFallback: true,
+    };
+    invokeMock.mockResolvedValue(preferences);
+
+    await expect(getLaunchPreferences()).resolves.toEqual(preferences);
+    expect(invokeMock).toHaveBeenLastCalledWith('get_launch_preferences');
+
+    await expect(saveLaunchPreferences(preferences)).resolves.toEqual(preferences);
+    expect(invokeMock).toHaveBeenLastCalledWith('save_launch_preferences', { preferences });
+  });
+
+  it('loads local agents and launches a selected agent in a project', async () => {
+    invokeMock.mockResolvedValue([]);
+    await expect(getLocalAgents()).resolves.toEqual([]);
+    expect(invokeMock).toHaveBeenLastCalledWith('get_local_agents');
+
+    invokeMock.mockResolvedValue(undefined);
+    await expect(launchAgent('project-1', 'codex')).resolves.toBeUndefined();
+    expect(invokeMock).toHaveBeenLastCalledWith('launch_agent', { projectId: 'project-1', agentId: 'codex' });
+
+    await expect(openDesktopAgent('antigravity-desktop')).resolves.toBeUndefined();
+    expect(invokeMock).toHaveBeenLastCalledWith('open_desktop_agent', { agentId: 'antigravity-desktop' });
+
+    invokeMock.mockResolvedValue([]);
+    await expect(checkAgentUpdates()).resolves.toEqual([]);
+    expect(invokeMock).toHaveBeenLastCalledWith('check_agent_updates');
+
+    invokeMock.mockResolvedValue({ agentId: 'codex', action: 'update', command: 'npm install -g @openai/codex@latest' });
+    await expect(getAgentMaintenancePlan('codex', 'update')).resolves.toMatchObject({ agentId: 'codex' });
+    expect(invokeMock).toHaveBeenLastCalledWith('get_agent_maintenance_plan', { agentId: 'codex', action: 'update' });
+
+    invokeMock.mockResolvedValue(undefined);
+    await expect(applyAgentMaintenance('codex', 'uninstall')).resolves.toBeUndefined();
+    expect(invokeMock).toHaveBeenLastCalledWith('apply_agent_maintenance', { agentId: 'codex', action: 'uninstall' });
   });
 });

@@ -1,8 +1,9 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 
 import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { AgentsPage } from '../features/agents/AgentsPage';
 import { McpPage } from '../features/mcp/McpPage';
-import { AgentsPage } from '../features/projects/pages/AgentsPage';
+import { AgentsPage as ProjectAgentsPage } from '../features/projects/pages/AgentsPage';
 import { EnvironmentPage } from '../features/projects/pages/EnvironmentPage';
 import { HarnessPage } from '../features/projects/pages/HarnessPage';
 import { ProjectSkillsPage } from '../features/projects/pages/ProjectSkillsPage';
@@ -27,11 +28,12 @@ export const appRoutes: RouteObject[] = [
           { index: true, element: <ProjectOverview /> },
           { path: 'harness', element: <HarnessPage /> },
           { path: 'skills', element: <ProjectSkillsPage /> },
-          { path: 'agents', element: <AgentsPage /> },
+          { path: 'agents', element: <ProjectAgentsPage /> },
           { path: 'environment', element: <EnvironmentPage /> },
         ],
       },
       { path: 'skills', element: <SkillsPage /> },
+      { path: 'agents', element: <AgentsPage /> },
       { path: 'harness', element: <GlobalHarnessPage /> },
       { path: 'mcp', element: <McpPage /> },
       { path: 'tasks', element: <TasksPage /> },

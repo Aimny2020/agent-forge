@@ -6,5 +6,6 @@ pub mod health;
 pub mod ports;
 pub mod project;
 pub mod project_harness;
+pub mod settings;
 pub mod skill;
 pub mod task;

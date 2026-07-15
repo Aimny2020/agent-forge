@@ -110,6 +110,14 @@ pub trait ProjectHarnessRepository: Send + Sync {
     fn delete_project_harness(&self, project_id: &str) -> DomainResult<()>;
 }
 
+pub trait SettingsRepository: Send + Sync {
+    fn get_launch_preferences(&self) -> DomainResult<crate::domain::settings::LaunchPreferences>;
+    fn save_launch_preferences(
+        &self,
+        preferences: &crate::domain::settings::LaunchPreferences,
+    ) -> DomainResult<()>;
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;

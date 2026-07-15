@@ -3,6 +3,11 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   CommandFailure,
   HealthReport,
+  LaunchPreferences,
+  LocalAgent,
+  AgentMaintenanceAction,
+  AgentMaintenancePlan,
+  AgentUpdate,
   ImportInspection,
   Skill,
   SkillUpdate,
@@ -64,6 +69,76 @@ function normalizeError(error: unknown): AppError {
 export async function getHealth(): Promise<HealthReport> {
   try {
     return await invoke<HealthReport>('health_check');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getLaunchPreferences(): Promise<LaunchPreferences> {
+  try {
+    return await invoke<LaunchPreferences>('get_launch_preferences');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function saveLaunchPreferences(preferences: LaunchPreferences): Promise<LaunchPreferences> {
+  try {
+    return await invoke<LaunchPreferences>('save_launch_preferences', { preferences });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getLocalAgents(): Promise<LocalAgent[]> {
+  try {
+    return await invoke<LocalAgent[]>('get_local_agents');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function launchAgent(projectId: string, agentId: string): Promise<void> {
+  try {
+    await invoke<void>('launch_agent', { projectId, agentId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function openDesktopAgent(agentId: string): Promise<void> {
+  try {
+    await invoke<void>('open_desktop_agent', { agentId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function checkAgentUpdates(): Promise<AgentUpdate[]> {
+  try {
+    return await invoke<AgentUpdate[]>('check_agent_updates');
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function getAgentMaintenancePlan(
+  agentId: string,
+  action: AgentMaintenanceAction,
+): Promise<AgentMaintenancePlan> {
+  try {
+    return await invoke<AgentMaintenancePlan>('get_agent_maintenance_plan', { agentId, action });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function applyAgentMaintenance(
+  agentId: string,
+  action: AgentMaintenanceAction,
+): Promise<void> {
+  try {
+    await invoke<void>('apply_agent_maintenance', { agentId, action });
   } catch (error) {
     throw normalizeError(error);
   }

@@ -4,6 +4,8 @@ pub enum DomainError {
     Database(String),
     #[error("application data directory is unavailable")]
     AppDataDirectory,
+    #[error("operation unavailable: {0}")]
+    Operation(String),
 }
 
 pub type DomainResult<T> = Result<T, DomainError>;

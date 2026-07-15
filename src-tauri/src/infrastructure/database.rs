@@ -7,6 +7,7 @@ use rusqlite::OptionalExtension;
 use crate::domain::error::{DomainError, DomainResult};
 use crate::domain::health::{DatabasePort, DatabaseStatus};
 use crate::domain::ports::ProjectHarnessRepository;
+use crate::domain::ports::SettingsRepository;
 use crate::domain::ports::{HarnessRepository, SkillRepository};
 use crate::domain::project::Project;
 use crate::domain::skill::{Category, SkillPackageRecord, SourceKind, UserSkillMeta};
@@ -21,6 +22,8 @@ const HARNESS_PRESET_MIGRATION: &str =
     include_str!("../../migrations/006_harness_template_preset.sql");
 const PROJECT_HARNESSES_MIGRATION: &str =
     include_str!("../../migrations/007_project_harnesses.sql");
+const LAUNCH_PREFERENCES_MIGRATION: &str =
+    include_str!("../../migrations/008_launch_preferences.sql");
 
 pub struct SqliteDatabase {
     connection: Mutex<Connection>,
@@ -81,6 +84,9 @@ impl SqliteDatabase {
         connection
             .execute_batch(PROJECT_HARNESSES_MIGRATION)
             .map_err(database_error)?;
+        connection
+            .execute_batch(LAUNCH_PREFERENCES_MIGRATION)
+            .map_err(database_error)?;
         Ok(Self {
             connection: Mutex::new(connection),
         })
@@ -114,6 +120,70 @@ impl DatabasePort for SqliteDatabase {
             .query_row("SELECT 1", [], |_| Ok(()))
             .map_err(database_error)?;
         Ok(DatabaseStatus::Ready)
+    }
+}
+
+impl SettingsRepository for SqliteDatabase {
+    fn get_launch_preferences(&self) -> DomainResult<crate::domain::settings::LaunchPreferences> {
+        let connection = self
+            .connection
+            .lock()
+            .map_err(|error| DomainError::Database(error.to_string()))?;
+        connection
+            .query_row(
+                "SELECT macos_terminal, windows_terminal, launch_presentation, show_command_preview, check_environment, check_permissions, allow_copy_command_fallback FROM launch_preferences WHERE id = 1",
+                [],
+                |row| {
+                    Ok(crate::domain::settings::LaunchPreferences {
+                        macos_terminal: row.get(0)?,
+                        windows_terminal: row.get(1)?,
+                        launch_presentation: row.get(2)?,
+                        show_command_preview: row.get::<_, i64>(3)? != 0,
+                        check_environment: row.get::<_, i64>(4)? != 0,
+                        check_permissions: row.get::<_, i64>(5)? != 0,
+                        allow_copy_command_fallback: row.get::<_, i64>(6)? != 0,
+                    })
+                },
+            )
+            .optional()
+            .map_err(database_error)
+            .map(|preferences| preferences.unwrap_or_default())
+    }
+
+    fn save_launch_preferences(
+        &self,
+        preferences: &crate::domain::settings::LaunchPreferences,
+    ) -> DomainResult<()> {
+        let connection = self
+            .connection
+            .lock()
+            .map_err(|error| DomainError::Database(error.to_string()))?;
+        connection
+            .execute(
+                "INSERT INTO launch_preferences (id, macos_terminal, windows_terminal, launch_presentation, show_command_preview, check_environment, check_permissions, allow_copy_command_fallback, updated_at)
+                 VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                 ON CONFLICT(id) DO UPDATE SET
+                    macos_terminal = excluded.macos_terminal,
+                    windows_terminal = excluded.windows_terminal,
+                    launch_presentation = excluded.launch_presentation,
+                    show_command_preview = excluded.show_command_preview,
+                    check_environment = excluded.check_environment,
+                    check_permissions = excluded.check_permissions,
+                    allow_copy_command_fallback = excluded.allow_copy_command_fallback,
+                    updated_at = excluded.updated_at",
+                rusqlite::params![
+                    preferences.macos_terminal,
+                    preferences.windows_terminal,
+                    preferences.launch_presentation,
+                    preferences.show_command_preview as i64,
+                    preferences.check_environment as i64,
+                    preferences.check_permissions as i64,
+                    preferences.allow_copy_command_fallback as i64,
+                    chrono::Utc::now().to_rfc3339(),
+                ],
+            )
+            .map_err(database_error)?;
+        Ok(())
     }
 }
 
@@ -917,7 +987,7 @@ fn database_error(error: rusqlite::Error) -> DomainError {
 #[cfg(test)]
 mod tests {
     use crate::domain::health::{DatabasePort, DatabaseStatus};
-    use crate::domain::ports::{HarnessRepository, SkillRepository};
+    use crate::domain::ports::{HarnessRepository, SettingsRepository, SkillRepository};
     use crate::domain::skill::{SkillPackageRecord, SourceKind};
 
     use super::SqliteDatabase;
@@ -939,6 +1009,27 @@ mod tests {
         assert!(database.has_table("harness_templates").unwrap());
         assert!(database.has_table("project_harnesses").unwrap());
         assert!(database.has_table("project_harness_files").unwrap());
+        assert!(database.has_table("launch_preferences").unwrap());
+    }
+
+    #[test]
+    fn launch_preferences_default_and_round_trip() {
+        let database = SqliteDatabase::open_in_memory().unwrap();
+        let defaults = database.get_launch_preferences().unwrap();
+        assert_eq!(defaults.macos_terminal, "auto");
+        assert!(defaults.show_command_preview);
+
+        let preferences = crate::domain::settings::LaunchPreferences {
+            macos_terminal: "iterm".into(),
+            windows_terminal: "windows_terminal".into(),
+            launch_presentation: "new_window".into(),
+            show_command_preview: false,
+            check_environment: true,
+            check_permissions: false,
+            allow_copy_command_fallback: true,
+        };
+        database.save_launch_preferences(&preferences).unwrap();
+        assert_eq!(database.get_launch_preferences().unwrap(), preferences);
     }
 
     #[test]

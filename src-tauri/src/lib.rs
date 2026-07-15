@@ -6,9 +6,11 @@ pub mod infrastructure;
 use std::sync::Arc;
 
 use application::health_service::HealthService;
+use commands::agents::*;
 use commands::harnesses::*;
 use commands::health::{health_check, AppState};
 use commands::projects::*;
+use commands::settings::*;
 use commands::skills::*;
 use infrastructure::database::SqliteDatabase;
 use infrastructure::system::PlatformSystem;
@@ -31,6 +33,8 @@ pub fn run() {
                 Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>
             );
             let repo = Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>;
+            let settings =
+                Arc::clone(&database) as Arc<dyn crate::domain::ports::SettingsRepository>;
             let harnesses = application::harness_service::HarnessService::new(
                 Arc::clone(&database) as Arc<dyn crate::domain::ports::HarnessRepository>,
                 Arc::clone(&database) as Arc<dyn crate::domain::ports::SkillRepository>,
@@ -46,13 +50,21 @@ pub fn run() {
                 health: HealthService::new(database, system),
                 skills,
                 repo,
+                settings,
                 harnesses,
                 project_harnesses,
+                agents: application::agent_service::AgentService::new(),
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             health_check,
+            get_local_agents,
+            launch_agent,
+            open_desktop_agent,
+            check_agent_updates,
+            get_agent_maintenance_plan,
+            apply_agent_maintenance,
             get_skills,
             import_skill,
             inspect_skill_import,
@@ -72,6 +84,8 @@ pub fn run() {
             add_project,
             select_directory,
             delete_project,
+            get_launch_preferences,
+            save_launch_preferences,
             save_custom_description,
             export_custom_descriptions,
             preview_custom_descriptions_import,

@@ -7,6 +7,60 @@ export interface HealthReport {
   ready: boolean;
 }
 
+export type TerminalPreference =
+  | 'auto'
+  | 'terminal'
+  | 'iterm'
+  | 'warp'
+  | 'vscode'
+  | 'windows_terminal'
+  | 'powershell'
+  | 'git_bash';
+
+export type LaunchPresentation = 'new_tab' | 'new_window';
+
+export interface LaunchPreferences {
+  macosTerminal: TerminalPreference;
+  windowsTerminal: TerminalPreference;
+  launchPresentation: LaunchPresentation;
+  showCommandPreview: boolean;
+  checkEnvironment: boolean;
+  checkPermissions: boolean;
+  allowCopyCommandFallback: boolean;
+}
+
+export type LocalAgentStatus = 'ready' | 'missing';
+
+export interface LocalAgent {
+  id: string;
+  product: string;
+  displayName: string;
+  surface: 'cli' | 'desktop';
+  command: string;
+  status: LocalAgentStatus;
+  version?: string;
+  executablePath?: string;
+  canInstall: boolean;
+  canUpdate: boolean;
+  canUninstall: boolean;
+}
+
+export type AgentUpdateStatus = 'not_installed' | 'unknown' | 'current' | 'available';
+export type AgentMaintenanceAction = 'install' | 'update' | 'uninstall';
+
+export interface AgentUpdate {
+  agentId: string;
+  status: AgentUpdateStatus;
+  currentVersion?: string;
+  latestVersion?: string;
+}
+
+export interface AgentMaintenancePlan {
+  agentId: string;
+  action: AgentMaintenanceAction;
+  command: string;
+}
+
 export interface CommandFailure {
   code: string;
   message: string;

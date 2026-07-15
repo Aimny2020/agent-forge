@@ -5,7 +5,7 @@ import { TopNavigation } from './TopNavigation';
 
 export function AppShell() {
   const location = useLocation();
-  const showSidebar = !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/harness');
+  const showSidebar = !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/harness') && !location.pathname.startsWith('/agents');
 
   return (
     <div className="app-shell">

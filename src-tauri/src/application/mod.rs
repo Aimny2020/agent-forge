@@ -1,3 +1,4 @@
+pub mod agent_service;
 pub mod harness_service;
 pub mod health_service;
 pub mod project_harness_service;

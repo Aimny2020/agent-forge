@@ -1,6 +1,8 @@
+pub mod agents;
 pub mod harnesses;
 pub mod health;
 pub mod projects;
+pub mod settings;
 pub mod skills;
 
 use crate::domain::error::DomainError;
@@ -25,6 +27,11 @@ impl From<DomainError> for CommandError {
                 code: "app_data_unavailable".into(),
                 message: "无法访问 AgentForge 数据目录。".into(),
                 details: None,
+            },
+            DomainError::Operation(details) => Self {
+                code: "operation_unavailable".into(),
+                message: "当前 Agent 操作无法完成，请检查安装与启动偏好。".into(),
+                details: Some(details),
             },
         }
     }

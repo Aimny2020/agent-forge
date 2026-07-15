@@ -5,14 +5,17 @@ use crate::application::health_service::HealthService;
 use crate::application::skill_service::SkillService;
 use crate::commands::CommandError;
 use crate::domain::health::HealthReport;
+use crate::domain::ports::SettingsRepository;
 use crate::domain::ports::SkillRepository;
 
 pub struct AppState {
     pub health: HealthService,
     pub skills: SkillService,
     pub repo: Arc<dyn SkillRepository>,
+    pub settings: Arc<dyn SettingsRepository>,
     pub harnesses: crate::application::harness_service::HarnessService,
     pub project_harnesses: crate::application::project_harness_service::ProjectHarnessService,
+    pub agents: crate::application::agent_service::AgentService,
 }
 
 #[tauri::command]
