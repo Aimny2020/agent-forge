@@ -1,6 +1,5 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 
-import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AgentsPage } from '../features/agents/AgentsPage';
 import { McpPage } from '../features/mcp/McpPage';
 import { AgentsPage as ProjectAgentsPage } from '../features/projects/pages/AgentsPage';
@@ -20,7 +19,7 @@ export const appRoutes: RouteObject[] = [
     path: '/',
     element: <AppShell />,
     children: [
-      { index: true, element: <DashboardPage /> },
+      { index: true, element: <ProjectsPage /> },
       {
         path: 'projects',
         element: <ProjectsPage />,

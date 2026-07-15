@@ -36,7 +36,7 @@ describe('foundation routes', () => {
   });
 
   it.each([
-    ['/', '控制面板'],
+    ['/', '项目管理'],
     ['/projects', '项目管理'],
     ['/skills', 'Skills 管理'],
     ['/agents', 'Agents 管理'],

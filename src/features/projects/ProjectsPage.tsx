@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, useOutlet } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { getProjects, deleteProject } from '../../shared/api/tauriClient';
 import { useProjectStore } from '../../shared/store/projectStore';
+import { ProjectOverview } from './pages/ProjectOverview';
 import '../skills/components/skills.css';
 
 const tabs = [
@@ -15,6 +16,7 @@ const tabs = [
 ];
 
 export function ProjectsPage() {
+  const outlet = useOutlet();
   const queryClient = useQueryClient();
   const { activeProjectId, setActiveProjectId } = useProjectStore();
   const [confirmStep, setConfirmStep] = useState<'none' | 'first' | 'second'>('none');
@@ -64,7 +66,7 @@ export function ProjectsPage() {
           </button>
         )}
       </div>
-      <Outlet />
+      {outlet ?? <ProjectOverview />}
 
       {/* 二次确认 React 弹窗 */}
       {confirmStep !== 'none' && (
