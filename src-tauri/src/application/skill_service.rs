@@ -574,6 +574,25 @@ mod tests {
         )
         .unwrap();
         fs::write(skill_root.join("references/style-dna.md"), "style").unwrap();
+        for file_name in [
+            ".gitignore",
+            "README.md",
+            "README.en.md",
+            "CONTRIBUTING.md",
+            "LICENSE",
+            "LICENSE.txt",
+            "LICENSE-MIT",
+            "NOTICE",
+            "NOTICE.md",
+            "COPYING",
+        ] {
+            fs::write(skill_root.join(file_name), "repository metadata").unwrap();
+        }
+        fs::write(
+            skill_root.join("references/NOTICE.md"),
+            "nested repository metadata",
+        )
+        .unwrap();
 
         let db =
             Arc::new(crate::infrastructure::database::SqliteDatabase::open_in_memory().unwrap());
@@ -595,7 +614,21 @@ mod tests {
             .join("helloianneo-ian-xiaohei-illustrations");
         assert!(deployed.join("SKILL.md").exists());
         assert!(deployed.join("references/style-dna.md").exists());
-        assert!(!deployed.join("README.md").exists());
+        for file_name in [
+            ".gitignore",
+            "README.md",
+            "README.en.md",
+            "CONTRIBUTING.md",
+            "LICENSE",
+            "LICENSE.txt",
+            "LICENSE-MIT",
+            "NOTICE",
+            "NOTICE.md",
+            "COPYING",
+            "references/NOTICE.md",
+        ] {
+            assert!(!deployed.join(file_name).exists(), "{file_name} was copied");
+        }
         assert!(!deployed.join("examples").exists());
         assert!(!deployed.join("ian-xiaohei-illustrations").exists());
 
@@ -1332,7 +1365,7 @@ impl SkillService {
             let source_path = entry.path();
             let file_name = entry.file_name();
             let file_name_str = file_name.to_string_lossy();
-            if file_name_str == ".git" || file_name_str == ".github" {
+            if should_exclude_runtime_entry(&file_name_str, ty.is_dir()) {
                 continue;
             }
             if ty.is_symlink() || excluded.iter().any(|path| path == &source_path) {
@@ -1369,6 +1402,32 @@ impl SkillService {
         }
         Ok(())
     }
+}
+
+fn should_exclude_runtime_entry(name: &str, is_directory: bool) -> bool {
+    let normalized = name.to_ascii_lowercase();
+    if is_directory {
+        return normalized == ".git" || normalized == ".github";
+    }
+
+    matches!(
+        normalized.as_str(),
+        ".gitignore" | ".gitattributes" | ".gitmodules"
+    ) || is_repository_document(&normalized, "readme")
+        || is_repository_document(&normalized, "contributing")
+        || is_repository_document(&normalized, "changelog")
+        || is_repository_document(&normalized, "code_of_conduct")
+        || is_repository_document(&normalized, "security")
+        || is_repository_document(&normalized, "license")
+        || is_repository_document(&normalized, "notice")
+        || is_repository_document(&normalized, "copying")
+}
+
+fn is_repository_document(name: &str, base_name: &str) -> bool {
+    name == base_name
+        || name
+            .strip_prefix(base_name)
+            .is_some_and(|suffix| suffix.starts_with('.') || suffix.starts_with('-'))
 }
 
 pub fn normalize_git_url(url: &str) -> DomainResult<String> {

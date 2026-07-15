@@ -178,10 +178,8 @@ fn walk(directory: &Path, markdown_paths: &mut Vec<PathBuf>) -> DomainResult<()>
                 continue;
             }
             walk(&path, markdown_paths)?;
-        } else if file_type.is_file() {
-            if name == "SKILL.md" {
-                markdown_paths.push(path);
-            }
+        } else if file_type.is_file() && name == "SKILL.md" {
+            markdown_paths.push(path);
         }
     }
     Ok(())
