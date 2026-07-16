@@ -402,12 +402,7 @@ fn read_npm_latest_version(package: &str) -> Option<String> {
 #[cfg(target_os = "macos")]
 fn discover_desktop_agents() -> Vec<LocalAgent> {
     [
-        (
-            "codex-desktop",
-            "Codex",
-            "ChatGPT Desktop",
-            "ChatGPT.app",
-        ),
+        ("codex-desktop", "Codex", "ChatGPT Desktop", "ChatGPT.app"),
         (
             "antigravity-desktop",
             "Antigravity",
