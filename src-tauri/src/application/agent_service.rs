@@ -617,12 +617,17 @@ fn launch_in_terminal(
     let project = project.to_string_lossy();
     let executable = executable.to_string_lossy();
     let mut command = match preferences.windows_terminal.as_str() {
-        "auto" | "windows_terminal" => {
+        "auto" if find_executable("wt").is_some() => {
             let mut value = Command::new("wt");
             value.args(["-d", &project, "cmd", "/K", &executable]);
             value
         }
-        "powershell" => {
+        "windows_terminal" => {
+            let mut value = Command::new("wt");
+            value.args(["-d", &project, "cmd", "/K", &executable]);
+            value
+        }
+        "auto" | "powershell" => {
             let mut value = Command::new("powershell");
             value.args([
                 "-NoExit",
@@ -684,7 +689,11 @@ mod tests {
         assert!(agents.iter().any(|agent| agent.command == "openclaw"));
         assert!(agents.iter().any(|agent| agent.command == "hermes"));
         assert!(agents.iter().any(|agent| agent.command == "cursor-agent"));
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
         assert!(agents.iter().any(|agent| agent.id == "antigravity-desktop"));
+
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        assert!(!agents.iter().any(|agent| agent.surface == "desktop"));
     }
 
     #[test]

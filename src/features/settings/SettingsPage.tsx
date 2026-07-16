@@ -52,11 +52,9 @@ const macosTerminals: Array<{ value: TerminalPreference; label: string; detail: 
 ];
 
 const windowsTerminals: Array<{ value: TerminalPreference; label: string; detail: string }> = [
-  { value: 'auto', label: '自动选择', detail: '启动时选择首个可用终端。' },
+  { value: 'auto', label: '自动选择', detail: '优先使用 Windows Terminal；不可用时回退到 PowerShell。' },
   { value: 'windows_terminal', label: 'Windows Terminal', detail: '使用 Windows Terminal 新标签页。' },
   { value: 'powershell', label: 'PowerShell', detail: '使用 PowerShell 启动 CLI。' },
-  { value: 'git_bash', label: 'Git Bash', detail: '使用 Git Bash 的 POSIX 工作流。' },
-  { value: 'vscode', label: 'VS Code', detail: '将 CLI 交给集成终端。' },
 ];
 
 function PreferenceToggle({ checked, onChange, label, detail }: { checked: boolean; onChange: (checked: boolean) => void; label: string; detail: string }) {
