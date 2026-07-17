@@ -1,8 +1,10 @@
 # Skills Management Design Spec
 
+> 兼容性说明：`~/.agent-forge/` 继续作为内部持久化数据根目录，避免 AgentPalette 更名后已有 Skills 看似丢失。
+
 ## 1. Goal and Scope
 
-Skills Management 模块用于管理 AgentForge 的全局可复用“技能库”（Capability Catalog）。技能用于配置、指导或扩展各种 Agent 的行为。本模块将实现：
+Skills Management 模块用于管理 AgentPalette 的全局可复用“技能库”（Capability Catalog）。技能用于配置、指导或扩展各种 Agent 的行为。本模块将实现：
 - **全局文件存储**：所有技能存放在用户家目录的全局路径 `~/.agent-forge/skills/` 下，每个技能是一个独立的文件夹，内部包含 `SKILL.md`（内嵌 YAML Frontmatter 描述与正文说明）。
 - **用户自定义数据持久化**：使用已有的 SQLite 数据库存储用户自定义的属性（包含技能所属分类、个人备注/使用说明）。
 - **项目级启用机制**：技能的“启用/停用”状态属于项目级别，通过独立的 `project_skills` 关系表持久化。用户在项目详情页（Harness）中统一为当前项目启用或禁用技能。

@@ -25,7 +25,7 @@ impl From<DomainError> for CommandError {
             },
             DomainError::AppDataDirectory => Self {
                 code: "app_data_unavailable".into(),
-                message: "无法访问 AgentForge 数据目录。".into(),
+                message: "无法访问 AgentPalette 数据目录。".into(),
                 details: None,
             },
             DomainError::Operation(details) => Self {

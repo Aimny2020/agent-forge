@@ -15,6 +15,10 @@ use crate::domain::skill::{
     SkillUpdate, SourceKind, UpdateStatus,
 };
 
+// This legacy directory is a persistent user-data contract; retaining it prevents upgrades from
+// presenting an empty skill catalog after the product rename.
+const LEGACY_GLOBAL_DATA_DIRECTORY: &str = ".agent-forge";
+
 pub struct SkillService {
     repo: Arc<dyn SkillRepository>,
     skills_dir: PathBuf,
@@ -166,7 +170,7 @@ mod tests {
     impl Fixture {
         fn new() -> Self {
             let path =
-                std::env::temp_dir().join(format!("agentforge-service-{}", uuid::Uuid::new_v4()));
+                std::env::temp_dir().join(format!("agentpalette-service-{}", uuid::Uuid::new_v4()));
             fs::create_dir_all(&path).unwrap();
             Self(path)
         }
@@ -296,8 +300,11 @@ mod tests {
         fixture.skill("repo", "Repo");
         let repo = fixture.0.join("repo");
         run_git(&repo, &["init"]);
-        run_git(&repo, &["config", "user.email", "agentforge@example.test"]);
-        run_git(&repo, &["config", "user.name", "AgentForge Test"]);
+        run_git(
+            &repo,
+            &["config", "user.email", "agentpalette@example.test"],
+        );
+        run_git(&repo, &["config", "user.name", "AgentPalette Test"]);
         run_git(&repo, &["add", "."]);
         run_git(&repo, &["commit", "-m", "initial"]);
         assert!(!git_worktree_is_dirty(&repo).unwrap());
@@ -321,8 +328,11 @@ mod tests {
         fixture.skill("repo", "Repo");
         let repo = fixture.0.join("repo");
         run_git(&repo, &["init"]);
-        run_git(&repo, &["config", "user.email", "agentforge@example.test"]);
-        run_git(&repo, &["config", "user.name", "AgentForge Test"]);
+        run_git(
+            &repo,
+            &["config", "user.email", "agentpalette@example.test"],
+        );
+        run_git(&repo, &["config", "user.name", "AgentPalette Test"]);
         run_git(&repo, &["add", "."]);
         run_git(&repo, &["commit", "-m", "initial"]);
 
@@ -674,7 +684,7 @@ mod tests {
 impl SkillService {
     pub fn new(repo: Arc<dyn SkillRepository>) -> Self {
         let home = dirs::home_dir().expect("Failed to locate home directory");
-        let skills_dir = home.join(".agent-forge").join("skills");
+        let skills_dir = home.join(LEGACY_GLOBAL_DATA_DIRECTORY).join("skills");
         if !skills_dir.exists() {
             fs::create_dir_all(&skills_dir).expect("Failed to create skills directory");
         }

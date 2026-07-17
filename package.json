@@ -1,5 +1,6 @@
 {
-  "name": "agentforge",
+  "name": "agentpalette",
+  "description": "The right capabilities for every project.",
   "private": true,
   "version": "0.3.0",
   "type": "module",

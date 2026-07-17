@@ -228,7 +228,7 @@ export function HarnessPage() {
         </div>
       )}
 
-      {statusQuery.data.state === 'unmanaged_detected' && <div className="project-harness-adopt-strip"><AlertCircle size={17} /><span>项目目录已有 Harness 文件，但尚未被 AgentForge 纳管。</span><button type="button" className="button button--primary" onClick={() => adoptMutation.mutate()} disabled={adoptMutation.isPending}>{adoptMutation.isPending ? '正在纳管...' : '纳管现有 Harness'}</button></div>}
+      {statusQuery.data.state === 'unmanaged_detected' && <div className="project-harness-adopt-strip"><AlertCircle size={17} /><span>项目目录已有 Harness 文件，但尚未被 AgentPalette 纳管。</span><button type="button" className="button button--primary" onClick={() => adoptMutation.mutate()} disabled={adoptMutation.isPending}>{adoptMutation.isPending ? '正在纳管...' : '纳管现有 Harness'}</button></div>}
 
       {(statusQuery.data.state === 'managed' || statusQuery.data.state === 'invalid') && (
         <ManagedHarnessEditor

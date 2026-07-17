@@ -1,8 +1,10 @@
 # Skill Packs Design
 
+> Compatibility note: `~/.agent-forge/` remains the internal persistent data root so existing Skills stay available after the AgentPalette rename.
+
 ## Goal
 
-Extend the existing Skills catalog so AgentForge can manage both standalone Skills and atomic Skill Packs such as `obra/superpowers`, without introducing a separate Plugins page or a Harness-specific runtime in this release.
+Extend the existing Skills catalog so AgentPalette can manage both standalone Skills and atomic Skill Packs such as `obra/superpowers`, without introducing a separate Plugins page or a Harness-specific runtime in this release.
 
 ## Product model
 
@@ -14,7 +16,7 @@ Extend the existing Skills catalog so AgentForge can manage both standalone Skil
 
 ## Discovery
 
-AgentForge recursively scans each immediate child of `~/.agent-forge/skills/` for `SKILL.md` files. Discovery does not follow symbolic links and ignores `.git`, `node_modules`, `target`, and hidden cache directories.
+AgentPalette recursively scans each immediate child of `~/.agent-forge/skills/` for `SKILL.md` files. Discovery does not follow symbolic links and ignores `.git`, `node_modules`, `target`, and hidden cache directories.
 
 Each catalog entry has a stable top-level ID. Pack members have stable IDs derived from the pack ID and their relative path, while their source directory is preserved unchanged. Existing libraries are re-indexed automatically; no re-import or file movement is required.
 
@@ -44,9 +46,9 @@ Existing cloned directories recover provenance from `.git`. Local folders are ma
 
 Opening the Skills page performs a non-blocking update check; the toolbar also exposes a manual check. A remote ref is compared with the installed commit. Updates are never installed automatically.
 
-Before update, AgentForge verifies that the global Git worktree is clean. A dirty package is blocked from automatic update. A confirmed update is staged in a temporary sibling directory, validated, and atomically swapped into place. Failure leaves the prior package intact.
+Before update, AgentPalette verifies that the global Git worktree is clean. A dirty package is blocked from automatic update. A confirmed update is staged in a temporary sibling directory, validated, and atomically swapped into place. Failure leaves the prior package intact.
 
-Clean project installations managed by AgentForge are synchronized during the confirmed global update. Modified project copies stay at their current commit and are marked for attention. Each project-package relation records its installed commit.
+Clean project installations managed by AgentPalette are synchronized during the confirmed global update. Modified project copies stay at their current commit and are marked for attention. Each project-package relation records its installed commit.
 
 ## Project enablement and removal
 

@@ -12,8 +12,8 @@ export function TopNavigation() {
   return (
     <header className="top-navigation">
       <div className="brand-lockup">
-        <strong>AgentForge</strong>
-        <span>Agent 工程管理器</span>
+        <strong>AgentPalette</strong>
+        <span>跨工具、本地优先的 Agent 工作空间管理器</span>
       </div>
       <nav className="global-navigation" aria-label="全局导航">
         {navigation.map((item) => (

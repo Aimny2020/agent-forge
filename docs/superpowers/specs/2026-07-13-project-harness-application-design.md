@@ -7,7 +7,7 @@
 Let a registered project apply exactly one Harness template as a local project
 instance. Applying a template copies its complete Harness file set into the
 project. From that point, the project owns those files: users can edit them in
-AgentForge or externally, and later template edits never change the project.
+AgentPalette or externally, and later template edits never change the project.
 
 This feature belongs to project management. The global Harness page continues
 to manage reusable templates; the project Harness page manages only the
@@ -58,7 +58,7 @@ The Harness editor may read and write only:
 - `<project-root>/docs/**`
 
 It must not use Harness actions to edit source code, package configuration, or
-arbitrary project paths. External editors remain unrestricted; AgentForge
+arbitrary project paths. External editors remain unrestricted; AgentPalette
 always refreshes from disk instead of treating its editor state as canonical.
 
 ## Required Project Instance Files
@@ -118,7 +118,7 @@ The backend stages the resolved result before modifying the project. It verifies
 that target paths are writable, then applies all writes as one operation. A
 write failure rolls back any files already changed by that operation.
 
-When a project file is overwritten, AgentForge stores a restorable local backup
+When a project file is overwritten, AgentPalette stores a restorable local backup
 for that application operation. After a successful application, the project
 page provides a one-time undo action. Undo restores backed-up overwritten files
 and removes files newly created by that operation, subject to a final conflict
@@ -139,7 +139,7 @@ Once configured, the project Harness page provides:
 - Refresh from disk and explicit health validation.
 - Delete Harness action.
 
-External changes are visible after refresh or page reload. AgentForge must not
+External changes are visible after refresh or page reload. AgentPalette must not
 overwrite an externally changed file merely because its in-memory editor has an
 older version.
 
@@ -189,7 +189,7 @@ Show a file-by-file deletion review based on the recorded application manifest:
 Deletion never silently removes modified or newly added files. After file
 deletion, local management metadata is removed.
 
-Deleting or unregistering a project from AgentForge always follows the
+Deleting or unregistering a project from AgentPalette always follows the
 unmanage behavior: it removes application metadata and backups but never
 changes the physical project directory.
 

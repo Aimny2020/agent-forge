@@ -1,8 +1,10 @@
-# AgentForge GitHub Preview Release Implementation Plan
+# AgentPalette GitHub Preview Release Implementation Plan
+
+> Compatibility note: the Tauri identifier remains `com.lemon.agentforge` so the renamed application upgrades the existing installation and continues using its app-data directory.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Prepare AgentForge 0.1.0 for private, tag-triggered GitHub Draft Releases that build macOS ARM64/x64 DMGs and a Windows x64 NSIS installer.
+**Goal:** Prepare AgentPalette 0.1.0 for private, tag-triggered GitHub Draft Releases that build macOS ARM64/x64 DMGs and a Windows x64 NSIS installer.
 
 **Architecture:** Keep product metadata in the three existing manifests and enforce consistency with one zero-dependency Node script. Separate ordinary CI from release packaging, and use Tauri platform override files for platform-specific bundle targets and macOS ad-hoc signing. Documentation describes the private-preview and unsigned-installer constraints.
 
@@ -139,9 +141,9 @@ Expected: both files parse and all assertions succeed.
 - Modify: `.gitignore`
 - Modify: `README.md`
 - Create: `CHANGELOG.md`
-- Preserve deletion: `stitch_agentforge_project_manager (1)/DESIGN.md`
-- Preserve deletion: `stitch_agentforge_project_manager (1)/code.html`
-- Preserve deletion: `stitch_agentforge_project_manager (1)/screen.png`
+- Preserve deletion: `stitch_agentpalette_project_manager (1)/DESIGN.md`
+- Preserve deletion: `stitch_agentpalette_project_manager (1)/code.html`
+- Preserve deletion: `stitch_agentpalette_project_manager (1)/screen.png`
 
 **Interfaces:**
 - Consumes: exact release behavior established by Tasks 1–3.
@@ -190,10 +192,10 @@ Expected: all commands exit 0, all Rust tests pass, and Clippy emits no warnings
 
 Run: `npm run tauri -- build --bundles app`
 
-Expected: `src-tauri/target/release/bundle/macos/AgentForge.app` is produced. Do not claim local DMG success because the local DMG script has already failed in this environment.
+Expected: `src-tauri/target/release/bundle/macos/AgentPalette.app` is produced. Do not claim local DMG success because the local DMG script has already failed in this environment.
 
 - [ ] **Step 4: Review diff and remote**
 
 Run: `git diff --check && git diff --stat && git status --short && git remote -v`
 
-Expected: no whitespace errors; all intended files appear; no unrelated content is modified. Add `origin https://github.com/Aimny2020/agent-forge.git` only if no origin exists, then re-run `git remote -v`. Do not commit or push.
+Expected: no whitespace errors; all intended files appear; no unrelated content is modified. Add `origin https://github.com/Aimny2020/agentpalette.git` only if no origin exists, then re-run `git remote -v`. Do not commit or push.

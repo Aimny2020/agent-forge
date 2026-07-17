@@ -5,9 +5,9 @@
 **Goal:** 移除全局的技能 `is_enabled` 状态，改为项目级别的启用/停用关联表 `project_skills`；更新全局 Skills 管理页面（卡片、详情 Modal 移除启用开关，扩大备注框）；并在项目的 Harness 页面中实现勾选开启/关闭该项目下全局技能的交互。
 
 **Architecture:** 
-- **数据层**：修改 SQLite 迁移 `002_skills.sql`，删除全局 `is_enabled`。建立 `project_skills` 关系表关联 `projects(id)` 和 `skills_user_meta(skill_id)`。在数据库初始化时，默认向 `projects` 表插入 `'agent-forge-core-id'` 作为 Mock 项目以保持外键关联通过。
+- **数据层**：修改 SQLite 迁移 `002_skills.sql`，删除全局 `is_enabled`。建立 `project_skills` 关系表关联 `projects(id)` 和 `skills_user_meta(skill_id)`。在数据库初始化时，默认向 `projects` 表插入 `'agentpalette-core-id'` 作为 Mock 项目以保持外键关联通过。
 - **服务与 Command 层**：更新 `SkillRepository` 持久化接口与 `SkillService` 逻辑。添加项目级命令：`get_project_skills` 和 `toggle_project_skill`。
-- **前端层**：修改 `SkillCard`、`SkillDetailModal` 和 `SkillsPage` 移除启用逻辑。重构 `HarnessPage.tsx` 获取全局 Skills 列表，并通过 Checkbox 列表控制项目 `'agent-forge-core-id'` 对这些技能的启用状态。
+- **前端层**：修改 `SkillCard`、`SkillDetailModal` 和 `SkillsPage` 移除启用逻辑。重构 `HarnessPage.tsx` 获取全局 Skills 列表，并通过 Checkbox 列表控制项目 `'agentpalette-core-id'` 对这些技能的启用状态。
 
 **Tech Stack:** React 19, Tauri v2, SQLite, React Query, Vanilla CSS.
 
@@ -60,7 +60,7 @@
 
   -- 预插一条 mock 项目以供外键关联通过
   INSERT OR IGNORE INTO projects (id, name, path, created_at)
-  VALUES ('agent-forge-core-id', 'Agent-Forge-Core', '/users/dev/core', CURRENT_TIMESTAMP);
+  VALUES ('agentpalette-core-id', 'AgentPalette Core', '/users/dev/core', CURRENT_TIMESTAMP);
   ```
 
 - [ ] **Step 2: Add database schema test assertions**
@@ -691,7 +691,7 @@
   import { Card } from '../../../shared/ui/Card';
   import './harness.css';
 
-  const MOCK_PROJECT_ID = 'agent-forge-core-id';
+  const MOCK_PROJECT_ID = 'agentpalette-core-id';
 
   export function HarnessPage() {
     const queryClient = useQueryClient();

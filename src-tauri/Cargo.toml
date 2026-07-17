@@ -1,12 +1,12 @@
 [package]
-name = "agentforge"
+name = "agent_palette"
 version = "0.3.0"
-description = "Local AI engineering workbench"
+description = "A local-first desktop workspace for managing agents, skills, and harnesses across projects and AI tools."
 authors = ["Aimny2020"]
 edition = "2021"
 
 [lib]
-name = "agentforge_lib"
+name = "agent_palette_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

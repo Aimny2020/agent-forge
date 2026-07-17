@@ -91,7 +91,7 @@ function MaintenanceConfirmation({
           <button type="button" className="close-btn" onClick={onClose} disabled={isApplying} aria-label="关闭"><X size={20} /></button>
         </div>
         <div className="agent-maintenance-modal__content">
-          <p>AgentForge 将在本机执行以下受控命令：</p>
+          <p>AgentPalette 将在本机执行以下受控命令：</p>
           <code>{plan.command}</code>
           {dangerous && <p className="agent-maintenance-modal__warning">卸载会移除该 CLI 的全局安装。项目和聊天记录不会被删除。</p>}
           {error && <p className="project-agent-error">{error}</p>}

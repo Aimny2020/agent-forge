@@ -259,7 +259,7 @@ mod tests {
     impl Fixture {
         fn new() -> Self {
             let path =
-                std::env::temp_dir().join(format!("agentforge-scan-{}", uuid::Uuid::new_v4()));
+                std::env::temp_dir().join(format!("agentpalette-scan-{}", uuid::Uuid::new_v4()));
             fs::create_dir_all(&path).unwrap();
             Self { path }
         }

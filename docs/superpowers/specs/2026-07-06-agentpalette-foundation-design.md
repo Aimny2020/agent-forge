@@ -1,8 +1,8 @@
-# AgentForge Foundation Design
+# AgentPalette Foundation Design
 
 ## Goal and Scope
 
-AgentForge（Agent 工程管理器）是基于 Tauri v2、React、TypeScript 与 Rust 的本地 AI 开发工作台。第一阶段仅交付可运行、可扩展的应用骨架：桌面窗口、导航页面、设计系统、Rust 分层、SQLite 初始化与类型化 IPC。项目扫描、配置生成、PTY 和真实 Agent 启动均留到后续阶段。
+AgentPalette 是一个跨工具、本地优先的桌面管理器，用于集中管理 Agents、Skills 和 Harnesses，并为每个项目配置恰到好处的 AI 能力组合。第一阶段仅交付可运行、可扩展的应用骨架：桌面窗口、导航页面、设计系统、Rust 分层、SQLite 初始化与类型化 IPC。项目扫描、配置生成、PTY 和真实 Agent 启动均留到后续阶段。
 
 长期产品边界是“本地 Agent 工程控制台”，而非代码编辑器、通用聊天客户端或 Agent 推理运行时。
 
@@ -20,7 +20,7 @@ AgentForge（Agent 工程管理器）是基于 Tauri v2、React、TypeScript 与
 
 ## Data and Configuration Direction
 
-项目内 `.agentforge/manifest.toml` 保存可提交 Git 的工程规则；本地 SQLite 保存项目索引、运行记录、任务状态和个人偏好；密钥存入系统 Keychain。未来由中立配置模型生成各 Agent 原生配置，写入前必须展示 Diff、备份旧文件并保留无法识别的手写内容。
+项目内 `.agentpalette/manifest.toml` 保存可提交 Git 的工程规则；本地 SQLite 保存项目索引、运行记录、任务状态和个人偏好；密钥存入系统 Keychain。未来由中立配置模型生成各 Agent 原生配置，写入前必须展示 Diff、备份旧文件并保留无法识别的手写内容。
 
 ## Frontend Structure
 
@@ -37,7 +37,7 @@ AgentForge（Agent 工程管理器）是基于 Tauri v2、React、TypeScript 与
 
 ## Visual System
 
-沿用 `stitch_agentforge_project_manager (1)` 的 Vivid Precision 方向：浅冷灰画布、白色卡片、Neo-Green 强调色、柔和阴影和 16px 圆角。标题使用 Hanken Grotesk，正文使用 Inter，间距遵循 8px 基线。提供亮色与暗色主题，并适配常见桌面窗口尺寸。
+沿用 `stitch_agentpalette_project_manager (1)` 的 Vivid Precision 方向：浅冷灰画布、白色卡片、Neo-Green 强调色、柔和阴影和 16px 圆角。标题使用 Hanken Grotesk，正文使用 Inter，间距遵循 8px 基线。提供亮色与暗色主题，并适配常见桌面窗口尺寸。
 
 ## First Runnable Flow
 
@@ -54,4 +54,4 @@ AgentForge（Agent 工程管理器）是基于 Tauri v2、React、TypeScript 与
 
 ## Reference Boundary
 
-`Antigravity-Manager` 仅作为成熟 Tauri v2 工程结构、IPC 和发布方式的参考，不复制其账号代理业务。Stitch 资料仅作为视觉与布局参考，AgentForge 的领域模型和信息架构独立设计。
+`Antigravity-Manager` 仅作为成熟 Tauri v2 工程结构、IPC 和发布方式的参考，不复制其账号代理业务。Stitch 资料仅作为视觉与布局参考，AgentPalette 的领域模型和信息架构独立设计。

@@ -12,7 +12,7 @@
 
 ### 1. 编程方式调用 (Frontend API)
 
-前端客户端文件 [tauriClient.ts](file:///Users/lemon/Technology/00-chenkai-project/agent-forge/src/shared/api/tauriClient.ts) 中保留了以下已封装的方法：
+前端客户端文件 [tauriClient.ts](file:///Users/lemon/Technology/00-chenkai-project/agentpalette/src/shared/api/tauriClient.ts) 中保留了以下已封装的方法：
 
 ```typescript
 // 1. 备份：触发系统保存文件对话框，将所有自定义技能说明导出为 pretty JSON 文件
@@ -36,7 +36,7 @@ export async function clearUnassociatedDescriptions(): Promise<number>;
 
 ### 2. Tauri IPC 直接触发 (Backend Commands)
 
-后端的 Rust 逻辑声明在 [skills.rs](file:///Users/lemon/Technology/00-chenkai-project/agent-forge/src-tauri/src/commands/skills.rs)，已通过 `tauri::generate_handler` 注册到应用底座中。
+后端的 Rust 逻辑声明在 [skills.rs](file:///Users/lemon/Technology/00-chenkai-project/agentpalette/src-tauri/src/commands/skills.rs)，已通过 `tauri::generate_handler` 注册到应用底座中。
 可以直接使用 Tauri 的 `invoke` 机制调用：
 
 ```javascript
@@ -64,6 +64,6 @@ const deletedCount = await invoke('clear_unassociated_descriptions');
 ---
 
 ## 关联文件清单 (References)
-- **后端命令实现**: [skills.rs](file:///Users/lemon/Technology/00-chenkai-project/agent-forge/src-tauri/src/commands/skills.rs)
-- **前端 API 封装**: [tauriClient.ts](file:///Users/lemon/Technology/00-chenkai-project/agent-forge/src/shared/api/tauriClient.ts)
-- **迁移数据库定义**: [004_skill_descriptions.sql](file:///Users/lemon/Technology/00-chenkai-project/agent-forge/src-tauri/migrations/004_skill_descriptions.sql)
+- **后端命令实现**: [skills.rs](file:///Users/lemon/Technology/00-chenkai-project/agentpalette/src-tauri/src/commands/skills.rs)
+- **前端 API 封装**: [tauriClient.ts](file:///Users/lemon/Technology/00-chenkai-project/agentpalette/src/shared/api/tauriClient.ts)
+- **迁移数据库定义**: [004_skill_descriptions.sql](file:///Users/lemon/Technology/00-chenkai-project/agentpalette/src-tauri/migrations/004_skill_descriptions.sql)

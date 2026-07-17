@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AgentForge",
+  "productName": "AgentPalette",
   "version": "0.3.0",
   "identifier": "com.lemon.agentforge",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "AgentForge",
+        "title": "AgentPalette",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -25,6 +25,8 @@
     }
   },
   "bundle": {
-    "active": true
+    "active": true,
+    "shortDescription": "The right capabilities for every project.",
+    "longDescription": "AgentPalette is a local-first desktop workspace for managing agents, skills, and harnesses across projects and AI tools."
   }
 }

@@ -7,7 +7,7 @@ import { AppShell } from './AppShell';
 
 const { getProjectsMock } = vi.hoisted(() => ({
   getProjectsMock: vi.fn().mockResolvedValue([
-    { id: 'agent-forge-core-id', name: 'Agent-Forge-Core', path: '/users/dev/core', created_at: '' }
+    { id: 'agentpalette-core-id', name: 'AgentPalette Core', path: '/users/dev/core', created_at: '' }
   ]),
 }));
 
@@ -39,6 +39,8 @@ describe('AppShell', () => {
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.getByText('AgentPalette')).toBeInTheDocument();
+    expect(screen.getByText('跨工具、本地优先的 Agent 工作空间管理器')).toBeInTheDocument();
     for (const label of ['项目管理', 'Skills', 'Harness', '设置']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
@@ -47,7 +49,7 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: '任务' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: '外观主题' })).not.toBeInTheDocument();
     // Wait for the query to resolve and show the project
-    expect(await screen.findByText('Agent-Forge-Core')).toBeInTheDocument();
+    expect(await screen.findByText('AgentPalette Core')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '项目管理' })).toHaveAttribute(
       'aria-current',
       'page',

@@ -1,5 +1,7 @@
 # Harness Preset Registry Implementation Plan
 
+> Compatibility note: `~/.agent-forge/` remains the internal persistent data root so existing Harness templates stay available after the AgentPalette rename.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the five ad-hoc Harness work types with four stable categories and a backend-owned, read-only registry of six built-in creation presets.

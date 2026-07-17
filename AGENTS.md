@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-AgentForge is a Tauri v2 desktop application. React and TypeScript live in `src/`: `app/` owns routing, providers, and the shared shell; `features/` contains page-level modules; `shared/` contains IPC clients, reusable UI, theme state, styles, and mock data. Rust lives in `src-tauri/src/`: `commands/` exposes thin Tauri handlers, `application/` coordinates use cases, `domain/` defines stable models and ports, and `infrastructure/` implements SQLite and platform adapters. Database migrations are in `src-tauri/migrations/`. Product specifications and plans are under `docs/superpowers/`.
+AgentPalette is a Tauri v2 desktop application. React and TypeScript live in `src/`: `app/` owns routing, providers, and the shared shell; `features/` contains page-level modules; `shared/` contains IPC clients, reusable UI, theme state, styles, and mock data. Rust lives in `src-tauri/src/`: `commands/` exposes thin Tauri handlers, `application/` coordinates use cases, `domain/` defines stable models and ports, and `infrastructure/` implements SQLite and platform adapters. Database migrations are in `src-tauri/migrations/`. Product specifications and plans are under `docs/superpowers/`.
 
 ## Build, Test, and Development Commands
 
@@ -28,4 +28,4 @@ This workspace has no Git history yet; use Conventional Commits such as `feat: a
 
 ## Security & Configuration
 
-Never commit secrets, `.env` files, local databases, or generated Agent credentials. Future project-shared settings belong in `.agentforge/manifest.toml`; sensitive values must be referenced by name and stored in the system Keychain.
+Never commit secrets, `.env` files, local databases, or generated Agent credentials. Future project-shared settings belong in `.agentpalette/manifest.toml`; sensitive values must be referenced by name and stored in the system Keychain. Keep the legacy `.agentforge/` metadata directory reserved and ignored until an explicit migration is implemented.

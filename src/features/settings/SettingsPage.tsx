@@ -76,7 +76,7 @@ function GeneralSettings() {
         <div className="settings-section-icon"><Palette aria-hidden="true" size={20} /></div>
         <div>
           <h2 id="general-settings-title">基础设置</h2>
-          <p>调整 AgentForge 在这台设备上的显示方式。</p>
+          <p>调整 AgentPalette 在这台设备上的显示方式。</p>
         </div>
       </div>
 
@@ -129,10 +129,10 @@ function AboutSettings({ version, loading, error, onRetry }: { version?: string;
   return (
     <div className="settings-about" aria-labelledby="about-settings-title">
       <div className="about-product">
-        <img src={appIcon} alt="AgentForge 应用图标" />
+        <img src={appIcon} alt="AgentPalette 应用图标" />
         <div>
-          <h2 id="about-settings-title">AgentForge</h2>
-          <p>面向本地 Agent 工作流的工程管理桌面应用。</p>
+          <h2 id="about-settings-title">AgentPalette</h2>
+          <p>跨工具、本地优先的 Agent 工作空间管理器。</p>
         </div>
       </div>
 
@@ -208,7 +208,7 @@ export function SettingsPage() {
   return (
     <div className="page-stack fixed-workspace-page settings-page-container">
       <header className="page-header settings-page-header">
-        <div><h1>设置</h1><p>管理 AgentForge 的外观、启动方式与应用信息。</p></div>
+        <div><h1>设置</h1><p>管理 AgentPalette 的外观、启动方式与应用信息。</p></div>
       </header>
 
       <nav className="settings-section-tabs" aria-label="设置分类">
@@ -231,7 +231,7 @@ export function SettingsPage() {
         {activeSection === 'launch' && (
           <>
             {(preferences.isLoading || health.isLoading) && <PageState state="loading" label="正在读取启动偏好..." />}
-            {(preferences.isError || health.isError) && <PageState state="error" title="无法读取启动偏好" description="基础设置与关于不受影响。请确认 AgentForge 后端已启动，然后重试。" onRetry={() => { void preferences.refetch(); void health.refetch(); }} />}
+            {(preferences.isError || health.isError) && <PageState state="error" title="无法读取启动偏好" description="基础设置与关于不受影响。请确认 AgentPalette 后端已启动，然后重试。" onRetry={() => { void preferences.refetch(); void health.refetch(); }} />}
             {preferences.isSuccess && health.isSuccess && draft && (
               <div className="settings-grid settings-grid--launch">
                 <Card className="launch-preferences-card">

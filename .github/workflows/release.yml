@@ -107,9 +107,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: AgentForge v__VERSION__
+          releaseName: AgentPalette v__VERSION__
           releaseBody: |
-            AgentForge internal preview build.
+            AgentPalette internal preview build.
 
             This release is unsigned on Windows and ad-hoc signed on macOS. See README.md for installation warnings.
           releaseDraft: true

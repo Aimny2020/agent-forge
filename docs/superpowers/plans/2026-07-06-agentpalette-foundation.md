@@ -1,4 +1,6 @@
-# AgentForge Foundation Implementation Plan
+# AgentPalette Foundation Implementation Plan
+
+> Compatibility note: `com.lemon.agentforge` and `agentforge.db` remain the internal upgrade identity and database filename so existing installations keep their data after the AgentPalette rename.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -47,11 +49,11 @@ createRoot(document.getElementById('root')!).render(
 );
 ```
 
-Add a temporary `App` that renders the AgentForge name and “Foundation loading” status. Task 4 replaces this placeholder with the routed application shell.
+Add a temporary `App` that renders the AgentPalette name and “Foundation loading” status. Task 4 replaces this placeholder with the routed application shell.
 
 - [ ] **Step 3: Add the minimal Tauri crate and configuration**
 
-Use product name `AgentForge`, identifier `com.agentforge.desktop`, 1280×800 default window, 960×640 minimum size, `beforeDevCommand: npm run dev`, and `beforeBuildCommand: npm run build`.
+Use product name `AgentPalette`, identifier `com.agentpalette.desktop`, 1280×800 default window, 960×640 minimum size, `beforeDevCommand: npm run dev`, and `beforeBuildCommand: npm run build`.
 
 - [ ] **Step 4: Install dependencies and verify the empty builds**
 
@@ -63,7 +65,7 @@ Expected: npm install succeeds; Vite build and Cargo check exit 0.
 
 ```bash
 git add package.json package-lock.json index.html vite.config.ts tsconfig*.json src src-tauri
-git commit -m "chore: scaffold AgentForge desktop workspace"
+git commit -m "chore: scaffold AgentPalette desktop workspace"
 ```
 
 If Git is still uninitialized, skip only the commit command and record that fact.
@@ -201,7 +203,7 @@ git commit -m "feat: add typed Tauri client"
 
 - [ ] **Step 1: Write the failing shell navigation test**
 
-Render a memory router and assert visible links for `控制面板`, `项目管理`, `Skills`, `MCP`, `任务`, and `设置`, plus the selected project `Agent-Forge-Core`.
+Render a memory router and assert visible links for `控制面板`, `项目管理`, `Skills`, `MCP`, `任务`, and `设置`, plus the selected project `AgentPalette Core`.
 
 - [ ] **Step 2: Run the test and verify failure**
 
@@ -227,7 +229,7 @@ Expected: test passes and production build exits 0.
 
 ```bash
 git add tailwind.config.ts postcss.config.cjs src/app src/shared/styles src/shared/ui
-git commit -m "feat: build AgentForge application shell"
+git commit -m "feat: build AgentPalette application shell"
 ```
 
 ### Task 5: Add six routed page modules and project tabs
@@ -303,7 +305,7 @@ Expected: FAIL because the theme store is absent.
 
 - [ ] **Step 3: Implement theme behavior and toggle**
 
-Use Zustand persistence under key `agentforge-theme`; support `system`, `light`, and `dark`; expose an accessible three-state control in the top navigation.
+Use Zustand persistence under key `agentpalette-theme`; support `system`, `light`, and `dark`; expose an accessible three-state control in the top navigation.
 
 - [ ] **Step 4: Add compile-only Rust port interfaces**
 
@@ -326,7 +328,7 @@ git commit -m "feat: add themes and domain extension ports"
 
 **Files:**
 - Create: `README.md`, `.gitignore`, `AGENTS.md`
-- Modify: `docs/superpowers/plans/2026-07-06-agentforge-foundation.md`
+- Modify: `docs/superpowers/plans/2026-07-06-agentpalette-foundation.md`
 
 - [ ] **Step 1: Document setup and architecture**
 
@@ -334,7 +336,7 @@ README must include prerequisites (Node LTS, Rust stable, Tauri system dependenc
 
 - [ ] **Step 2: Add repository guidance**
 
-Create the requested concise contributor guide with structure, commands, TypeScript/Rust naming, test placement, Conventional Commits, PR screenshots for UI changes, and security rules for `.agentforge` and secrets.
+Create the requested concise contributor guide with structure, commands, TypeScript/Rust naming, test placement, Conventional Commits, PR screenshots for UI changes, and security rules for `.agentpalette` and secrets.
 
 - [ ] **Step 3: Run formatters and static checks**
 
@@ -352,13 +354,13 @@ Expected: all tests pass.
 
 Run: `npm run tauri:dev`
 
-Expected: AgentForge opens at 1280×800; all routes navigate; theme persists; Dashboard reports ready database. Stop cleanly with Ctrl-C.
+Expected: AgentPalette opens at 1280×800; all routes navigate; theme persists; Dashboard reports ready database. Stop cleanly with Ctrl-C.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add README.md .gitignore AGENTS.md docs package.json package-lock.json src src-tauri
-git commit -m "docs: finalize AgentForge foundation"
+git commit -m "docs: finalize AgentPalette foundation"
 ```
 
 ## Plan Self-Review

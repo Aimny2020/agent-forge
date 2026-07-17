@@ -12,6 +12,9 @@ use crate::domain::project_harness::{
     ProjectHarnessConflict, ProjectHarnessFile, ProjectHarnessRecord, ProjectHarnessStatus,
 };
 
+// Templates and backups share the pre-rename data root to preserve existing user content.
+const LEGACY_GLOBAL_DATA_DIRECTORY: &str = ".agent-forge";
+
 pub struct ProjectHarnessService {
     project_repo: Arc<dyn SkillRepository>,
     template_repo: Arc<dyn HarnessRepository>,
@@ -31,7 +34,7 @@ impl ProjectHarnessService {
             project_harness_repo,
             templates_dir: dirs::home_dir()
                 .expect("Failed to locate home directory")
-                .join(".agent-forge")
+                .join(LEGACY_GLOBAL_DATA_DIRECTORY)
                 .join("harnesses"),
         }
     }
@@ -396,7 +399,7 @@ fn backup_file(project_id: &str, source: &Path, content: &[u8]) -> DomainResult<
         .unwrap_or("file");
     let backup_root = dirs::home_dir()
         .ok_or_else(|| DomainError::Database("无法定位本地备份目录".into()))?
-        .join(".agent-forge")
+        .join(LEGACY_GLOBAL_DATA_DIRECTORY)
         .join("project-harness-backups")
         .join(project_id)
         .join(
@@ -447,7 +450,9 @@ fn collect_docs_files(
     for entry in fs::read_dir(current).map_err(|e| DomainError::Database(e.to_string()))? {
         let entry = entry.map_err(|e| DomainError::Database(e.to_string()))?;
         let name = entry.file_name().to_string_lossy().into_owned();
-        if name == ".git" || name == ".DS_Store" || name == ".agentforge" {
+        // Ignore both the legacy project metadata directory and the new brand-aligned spelling.
+        if name == ".git" || name == ".DS_Store" || name == ".agentforge" || name == ".agentpalette"
+        {
             continue;
         }
         let path = entry.path();
@@ -716,7 +721,7 @@ mod tests {
     #[test]
     fn status_detects_unmanaged_project_harness() {
         let root =
-            std::env::temp_dir().join(format!("agentforge-project-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("agentpalette-project-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(root.join("docs")).unwrap();
         fs::write(root.join("AGENTS.md"), "# Agent").unwrap();
         fs::write(root.join("docs/harness.toml"), "id = 'x'").unwrap();
@@ -749,7 +754,7 @@ mod tests {
 
     #[test]
     fn project_harness_file_scan_does_not_enter_unrelated_project_directories() {
-        let root = std::env::temp_dir().join(format!("agentforge-scan-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("agentpalette-scan-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(root.join("docs")).unwrap();
         fs::create_dir_all(root.join("node_modules/dependency")).unwrap();
         fs::write(root.join("AGENTS.md"), "# Agent").unwrap();

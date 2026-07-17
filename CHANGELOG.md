@@ -1,6 +1,6 @@
 # Changelog
 
-本文件记录 AgentForge 的重要变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
+本文件记录 AgentPalette 的重要变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
 ## [Unreleased]
 
@@ -34,6 +34,6 @@
 - Windows 安装包未签名。
 - 暂不提供 Linux、MSI、移动端和自动更新支持。
 
-[Unreleased]: https://github.com/Aimny2020/agent-forge/compare/v0.2.1...HEAD
-[0.2.1]: https://github.com/Aimny2020/agent-forge/releases/tag/v0.2.1
-[0.1.0]: https://github.com/Aimny2020/agent-forge/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Aimny2020/agentpalette/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Aimny2020/agentpalette/releases/tag/v0.2.1
+[0.1.0]: https://github.com/Aimny2020/agentpalette/releases/tag/v0.1.0

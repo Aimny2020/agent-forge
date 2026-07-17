@@ -369,7 +369,7 @@ export function CreateHarnessModal({
             <section className="harness-wizard-panel">
               <p className="harness-wizard-hint">检查即将生成的目录结构。</p>
               <div className="harness-tree-preview">
-                <div>📁 ~/.agent-forge/harnesses/&lt;system-generated-id&gt;/</div>
+                <div>📁 ~/.agent-forge/harnesses/&lt;system-generated-id&gt;/ <small>(兼容数据目录)</small></div>
                 <div>&nbsp; 📄 AGENTS.md <small>(必填 Agent 入口)</small></div>
                 <div>&nbsp; 📁 docs/</div>
                 <div>&nbsp;&nbsp; 📄 harness.toml <small>(必填系统元数据)</small></div>

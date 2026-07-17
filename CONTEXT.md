@@ -1,6 +1,6 @@
-# AgentForge Control Plane
+# AgentPalette Product Context
 
-AgentForge is a local control plane for an individual developer to prepare, launch, and observe AI coding agents in registered software projects.
+AgentPalette is a local-first desktop workspace for managing agents, skills, and harnesses across projects and AI tools. Every project has its own Palette: users select the right capabilities from a global library and configure or synchronize that combination across projects and Agent tools.
 
 ## Language
 
@@ -29,9 +29,9 @@ An immutable record of the project context and launch configuration used for one
 _Avoid_: Chat history, project copy
 
 **External Handoff**:
-A launch that opens an external terminal or desktop agent application; AgentForge can record the handoff but may not control the child session.
+A launch that opens an external terminal or desktop agent application; AgentPalette can record the handoff but may not control the child session.
 _Avoid_: Managed run
 
 **Managed Run**:
-An agent execution started and directly observed by AgentForge, including its lifecycle and exit status.
+An agent execution started and directly observed by AgentPalette, including its lifecycle and exit status.
 _Avoid_: External handoff

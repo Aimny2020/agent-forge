@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement a user-maintained "技能说明" (custom description) field for skill packages and sub-skills in AgentForge. This custom description is stored in a separate SQLite table to survive skill scans, updates, and uninstalls, and it overrides the author's description in the UI. Users can search by this field, edit it in the details modal, and export/import it via versioned JSON.
+**Goal:** Implement a user-maintained "技能说明" (custom description) field for skill packages and sub-skills in AgentPalette. This custom description is stored in a separate SQLite table to survive skill scans, updates, and uninstalls, and it overrides the author's description in the UI. Users can search by this field, edit it in the details modal, and export/import it via versioned JSON.
 
 **Architecture:**
 - **Database Layer**: A new SQLite table `skill_descriptions` mapping `target_id` (package or sub-skill) to custom description and update timestamp, with no foreign key constraints.

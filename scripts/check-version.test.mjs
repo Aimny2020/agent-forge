@@ -11,19 +11,19 @@ async function createFixture({
   cargoVersion = "0.1.0",
   tauriVersion = "0.1.0",
 } = {}) {
-  const root = await mkdtemp(join(tmpdir(), "agentforge-version-"));
+  const root = await mkdtemp(join(tmpdir(), "agentpalette-version-"));
   await mkdir(join(root, "src-tauri"));
   await writeFile(
     join(root, "package.json"),
-    JSON.stringify({ name: "agentforge", version: packageVersion }),
+    JSON.stringify({ name: "agentpalette", version: packageVersion }),
   );
   await writeFile(
     join(root, "src-tauri", "Cargo.toml"),
-    `[package]\nname = "agentforge"\nversion = "${cargoVersion}"\n`,
+    `[package]\nname = "agent_palette"\nversion = "${cargoVersion}"\n`,
   );
   await writeFile(
     join(root, "src-tauri", "tauri.conf.json"),
-    JSON.stringify({ productName: "AgentForge", version: tauriVersion }),
+    JSON.stringify({ productName: "AgentPalette", version: tauriVersion }),
   );
   return root;
 }

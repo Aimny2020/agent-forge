@@ -1,5 +1,7 @@
 # Git Skill 导入身份设计
 
+> 兼容性说明：`~/.agent-forge/` 继续作为内部持久化数据根目录，保证导入的 Skills 在 AgentPalette 更名后路径稳定。
+
 ## 1. 目标
 
 修复 Git Skill 仓库同名时无法并存的问题。典型场景是 `anthropics/skills` 和 `mattpocock/skills` 的仓库名都叫 `skills`，但它们应当可以同时导入、更新、启用到项目，并且不会互相覆盖。

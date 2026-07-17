@@ -82,6 +82,8 @@ describe('SettingsPage', () => {
 
     await user.click(screen.getByRole('button', { name: '关于' }));
 
+    expect(screen.getByRole('heading', { name: 'AgentPalette', level: 2 })).toBeInTheDocument();
+    expect(screen.getByText('跨工具、本地优先的 Agent 工作空间管理器。')).toBeInTheDocument();
     expect(await screen.findByText('0.2.1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '检查更新（暂未开放）' })).toBeDisabled();
     expect(getLaunchPreferencesMock).not.toHaveBeenCalled();

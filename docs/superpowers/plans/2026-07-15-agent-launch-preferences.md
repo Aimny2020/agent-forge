@@ -2,13 +2,13 @@
 
 > **For agentic workers:** Implement this plan in focused vertical slices. Do not promise desktop-app project handoff until its official stable integration is verified per platform.
 
-**Goal:** Let an individual developer select platform-specific terminal launch preferences once, then use AgentForge as the canonical place to start an installed coding agent in a registered project.
+**Goal:** Let an individual developer select platform-specific terminal launch preferences once, then use AgentPalette as the canonical place to start an installed coding agent in a registered project.
 
 **Architecture:** Persist user-owned macOS and Windows launch preferences in SQLite. The domain expresses launch intent; platform adapters later resolve native terminal and application commands. Project-level preferences will override global preferences. CLI agents are managed first; desktop applications are initially external handoffs.
 
 **Tech Stack:** Tauri v2, Rust, SQLite/rusqlite, React, TypeScript, TanStack Query, Vitest.
 
-**Implementation status (2026-07-15):** Slice 1 is complete. The first core of Slices 2 and 3 is also complete: AgentForge scans the built-in CLI catalog and can hand off a selected registered project to Codex CLI, Claude Code, Antigravity CLI, Gemini CLI, or OpenCode through supported native terminals. Desktop-application discovery, richer diagnostics, project overrides, managed runs, and unsupported terminal integrations remain planned.
+**Implementation status (2026-07-15):** Slice 1 is complete. The first core of Slices 2 and 3 is also complete: AgentPalette scans the built-in CLI catalog and can hand off a selected registered project to Codex CLI, Claude Code, Antigravity CLI, Gemini CLI, or OpenCode through supported native terminals. Desktop-application discovery, richer diagnostics, project overrides, managed runs, and unsupported terminal integrations remain planned.
 
 ## Constraints
 

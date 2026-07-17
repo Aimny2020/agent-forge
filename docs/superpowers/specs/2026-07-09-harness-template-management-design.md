@@ -1,5 +1,7 @@
 # Harness Template Management Design
 
+> Compatibility note: `~/.agent-forge/` remains the internal persistent data root so existing Harness templates retain stable paths across the AgentPalette rename.
+
 ## Goal
 
 Build the global Harness page as a local library of reusable templates for long-running AI work. A Harness template is a file package that gives an agent durable instructions, state, scope, verification, and session handoff artifacts.
@@ -8,7 +10,7 @@ This release focuses on creating, importing, editing, validating, and organizing
 
 ## Product Boundary
 
-AgentForge has two Harness surfaces:
+AgentPalette has two Harness surfaces:
 
 - **Global Harness page**: manages reusable Harness templates.
 - **Project Harness page**: a later surface that selects and applies one or more templates to a project.
@@ -29,9 +31,9 @@ docs/
 Two files are hard requirements:
 
 - `AGENTS.md`: the agent entrypoint and navigation page.
-- `docs/harness.toml`: AgentForge metadata and file manifest.
+- `docs/harness.toml`: AgentPalette metadata and file manifest.
 
-All other files are optional at creation and freely editable afterward. AgentForge health checks are advisory: they warn about missing or invalid artifacts but never rewrite user-owned files.
+All other files are optional at creation and freely editable afterward. AgentPalette health checks are advisory: they warn about missing or invalid artifacts but never rewrite user-owned files.
 
 ### Five-Subsystem Standard
 
@@ -142,7 +144,7 @@ The only enforced files are `AGENTS.md` and `docs/harness.toml`. Deselecting a r
 
 ### Generated AGENTS.md
 
-AgentForge generates a preset-specific `AGENTS.md` that remains short and acts as a routing document rather than a manual. It includes:
+AgentPalette generates a preset-specific `AGENTS.md` that remains short and acts as a routing document rather than a manual. It includes:
 
 1. Startup order: which selected status, plan, and evidence files to read before work.
 2. Work rules: one clear active work item and no unrelated scope expansion.
@@ -182,7 +184,7 @@ Health checks warn about:
 
 ## Storage
 
-Templates are stored as managed directories under the global AgentForge data path:
+Templates are stored as managed directories under the global AgentPalette data path:
 
 ```text
 ~/.agent-forge/harnesses/
