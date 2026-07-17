@@ -167,7 +167,7 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', marginBottom: 'var(--space-2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     {inspectionResult.hasAgentsMd ? (
-                      <CheckCircle size={14} color="var(--color-primary-ink)" />
+                      <CheckCircle size={14} color="var(--color-success-ink)" />
                     ) : (
                       <AlertCircle size={14} color="var(--color-danger)" />
                     )}
@@ -175,7 +175,7 @@ export function ImportHarnessModal({ onClose, onImportFolder, onExtractProject }
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     {inspectionResult.hasManifest ? (
-                      <CheckCircle size={14} color="var(--color-primary-ink)" />
+                      <CheckCircle size={14} color="var(--color-success-ink)" />
                     ) : (
                       <AlertCircle size={14} color="var(--color-muted)" />
                     )}

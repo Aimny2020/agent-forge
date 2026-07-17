@@ -33,12 +33,12 @@
 }
 
 .harness-skill-row[data-enabled='true'] {
-  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-soft));
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-outline));
+  background: color-mix(in srgb, var(--color-primary) 62%, var(--color-surface-soft));
+  border-color: var(--color-primary-border);
 }
 
 .harness-skill-row[data-enabled='true']:hover {
-  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-soft));
+  background: var(--color-primary-hover);
 }
 
 .harness-skill-row input[type='checkbox'] {

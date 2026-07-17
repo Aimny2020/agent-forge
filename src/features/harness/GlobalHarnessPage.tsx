@@ -343,7 +343,7 @@ export function GlobalHarnessPage() {
                       }}
                     >
                       <div className="harness-tree__item-left">
-                        <File size={14} color={file.isStandard ? 'var(--color-primary-ink)' : 'var(--color-muted)'} />
+                        <File size={14} color={file.isStandard ? 'var(--color-primary-strong)' : 'var(--color-muted)'} />
                         <span className="harness-tree__item-name">{file.path}</span>
                       </div>
                       {file.path !== 'AGENTS.md' && file.path !== 'docs/harness.toml' && (
@@ -390,7 +390,7 @@ export function GlobalHarnessPage() {
                 {isCreatingFile && (
                   <div className="harness-tree__item harness-tree__item--creating">
                     <div className="harness-tree__item-left" style={{ width: '100%' }}>
-                      <File size={14} color="var(--color-primary-ink)" />
+                      <File size={14} color="var(--color-primary-strong)" />
                       <input
                         type="text"
                         className="harness-tree__input"
@@ -708,7 +708,7 @@ export function GlobalHarnessPage() {
                       <span>•</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
                         {summary.isValid ? (
-                          <span style={{ color: 'var(--color-primary-ink)' }}>● 状态良好</span>
+                          <span style={{ color: 'var(--color-success-ink)' }}>● 状态良好</span>
                         ) : (
                           <span style={{ color: 'var(--color-danger)' }}>● 待修复</span>
                         )}

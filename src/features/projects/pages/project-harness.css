@@ -9,7 +9,7 @@
 .project-harness-rail-heading h3 { margin: .25rem 0 0; font-size: 1rem; }
 .project-harness-count { display: grid; min-width: 1.6rem; height: 1.6rem; place-items: center; border-radius: 999px; background: var(--color-surface-strong); color: var(--color-ink); font-size: .75rem; font-weight: 700; }
 .project-harness-search { display: flex; align-items: center; gap: .5rem; margin: var(--space-3) 0 var(--space-2); padding: .62rem .7rem; border: 1px solid var(--color-outline); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-muted); }
-.project-harness-search:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgb(0 230 118 / .14); }
+.project-harness-search:focus-within { border-color: var(--color-primary-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-ring) 24%, transparent); }
 .project-harness-search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--color-ink); font: inherit; font-size: .82rem; }
 .project-harness-filter-row { display: flex; gap: .3rem; overflow-x: auto; padding-bottom: .5rem; }
 .project-harness-filter-row button { flex: 0 0 auto; border: 0; border-radius: 999px; background: transparent; color: var(--color-muted); padding: .32rem .52rem; cursor: pointer; font-size: .72rem; }
@@ -17,7 +17,7 @@
 .project-harness-template-list { display: grid; gap: .35rem; margin-top: .5rem; }
 .project-harness-template-item { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; padding: .72rem .6rem; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-ink); text-align: left; cursor: pointer; }
 .project-harness-template-item:hover { background: var(--color-surface); }
-.project-harness-template-item.is-selected { border-color: var(--color-primary); background: var(--color-surface); box-shadow: 0 0 0 2px rgb(0 230 118 / .1); }
+.project-harness-template-item.is-selected { border-color: var(--color-primary-border); background: var(--color-surface); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-ring) 18%, transparent); }
 .project-harness-template-icon { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: .55rem; background: var(--color-surface-strong); color: var(--color-ink); }
 .project-harness-template-item.is-selected .project-harness-template-icon { background: var(--color-primary); color: var(--color-primary-ink); }
 .project-harness-template-copy { display: grid; min-width: 0; gap: .22rem; }
@@ -39,13 +39,13 @@
 .project-harness-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: .72rem .8rem; border-bottom: 1px solid var(--color-outline); }
 .project-harness-panel-heading > div { display: flex; align-items: center; gap: .45rem; }
 .project-harness-panel-heading span { color: var(--color-muted); font-size: .74rem; }
-.project-harness-panel-heading .is-success { display: flex; align-items: center; gap: .25rem; color: var(--color-primary-ink); font-weight: 700; }
+.project-harness-panel-heading .is-success { display: flex; align-items: center; gap: .25rem; color: var(--color-success-ink); font-weight: 700; }
 .project-harness-panel-heading .is-danger { color: var(--color-danger); font-weight: 700; }
 .project-harness-preview-files { display: grid; max-height: clamp(7rem, 22vh, 16.25rem); overflow: auto; padding: .45rem; }
 .project-harness-preview-files div { display: flex; align-items: center; gap: .45rem; padding: .47rem .5rem; color: var(--color-muted); }
 .project-harness-preview-files div.is-entry { background: var(--color-surface-strong); color: var(--color-ink); }
 .project-harness-preview-files code, .project-harness-conflict-row code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
-.project-harness-preview-files span { margin-left: auto; color: var(--color-primary-ink); font-size: .68rem; font-weight: 700; }
+.project-harness-preview-files span { margin-left: auto; color: var(--color-primary-strong); font-size: .68rem; font-weight: 700; }
 .project-harness-check-copy { margin: 0; padding: .9rem; color: var(--color-muted); font-size: .8rem; line-height: 1.55; }
 .project-harness-inline-error { display: flex; gap: .55rem; margin: .8rem; padding: .65rem; border: 1px solid rgb(186 26 26 / .25); border-radius: var(--radius-sm); background: rgb(186 26 26 / .06); color: var(--color-danger); font-size: .78rem; }
 .project-harness-inline-error div { display: grid; gap: .35rem; }
@@ -60,7 +60,7 @@
 .project-harness-conflict-row > div:first-child span { color: var(--color-muted); font-size: .72rem; }
 .project-harness-conflict-actions { display: flex; flex: 0 0 auto; gap: .3rem; }
 .project-harness-conflict-actions button { border: 1px solid var(--color-outline); border-radius: .35rem; background: var(--color-surface); color: var(--color-ink); padding: .38rem .5rem; cursor: pointer; font-size: .72rem; }
-.project-harness-conflict-actions button.is-selected { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-primary-ink); font-weight: 700; }
+.project-harness-conflict-actions button.is-selected { border-color: var(--color-primary-border); background: var(--color-primary); color: var(--color-primary-ink); font-weight: 700; }
 .project-harness-apply-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: auto; padding-top: var(--space-3); }
 .project-harness-apply-footer > div { display: grid; gap: .2rem; }
 .project-harness-apply-footer strong { font-size: .83rem; }
@@ -77,7 +77,7 @@
 .project-harness-file-list { border-right: 1px solid var(--color-outline); padding-right: var(--space-2); }
 .project-harness-file-list h3 { margin-top: 0; }
 .project-harness-file-list button { display: flex; align-items: center; width: 100%; gap: .45rem; border: 0; background: transparent; color: var(--color-ink); text-align: left; padding: .55rem .5rem; border-radius: 5px; cursor: pointer; }
-.project-harness-file-list button.is-active { background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface)); color: var(--color-primary-ink); }
+.project-harness-file-list button.is-active { background: var(--color-primary); color: var(--color-primary-ink); }
 .project-harness-file-list button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .83rem; }
 .project-harness-file-list button i { width: 6px; height: 6px; border-radius: 50%; background: #c66a00; margin-left: auto; }
 .project-harness-editor { min-width: 0; padding-left: var(--space-2); }
@@ -225,7 +225,7 @@ body:has(.project-harness-page-container) {
 }
 
 .project-harness-file-list-scroll button.is-active {
-  background: color-mix(in srgb, var(--color-primary) 13%, var(--color-surface));
+  background: var(--color-primary);
   color: var(--color-primary-ink);
   font-weight: 700;
 }
@@ -289,7 +289,7 @@ body:has(.project-harness-page-container) {
 }
 
 .project-harness-editor-textarea-new textarea:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-strong);
 }
 
 /* Column 3: Sidebar Properties */

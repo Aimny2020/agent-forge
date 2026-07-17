@@ -46,8 +46,8 @@
 }
 
 .harness-search-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-color: var(--color-primary-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-ring) 24%, transparent);
 }
 
 .harness-filter-select {
@@ -127,8 +127,8 @@
 
 .harness-card:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-outline));
-  box-shadow: 0 12px 28px rgb(11 28 48 / 0.08);
+  border-color: var(--color-primary-border);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-primary-ring) 12%, transparent);
 }
 
 .harness-card__header {
@@ -186,7 +186,7 @@
 }
 
 .harness-badge--code { background: #e3f2fd; color: #1e88e5; }
-.harness-badge--document { background: #e8f5e9; color: #43a047; }
+.harness-badge--document { background: color-mix(in srgb, var(--color-primary) 55%, var(--color-surface)); color: var(--color-primary-strong); }
 .harness-badge--presentation { background: #fff3e0; color: #fb8c00; }
 .harness-badge--custom { background: var(--color-surface-soft); color: var(--color-muted); }
 
@@ -497,12 +497,12 @@ body:has(.harness-editor-container) {
   justify-content: center;
   font-weight: 700;
   font-size: 1.25rem;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success-strong) 18%, transparent);
 }
 
 .harness-health-score-ring[data-valid="true"] {
-  background: color-mix(in srgb, var(--color-primary) 15%, white);
-  color: var(--color-primary-ink);
+  background: var(--color-success);
+  color: var(--color-success-ink);
 }
 
 .harness-health-score-ring[data-valid="false"] {
@@ -542,7 +542,7 @@ body:has(.harness-editor-container) {
   margin-top: 0.1rem;
 }
 
-.harness-validation-item[data-type="success"] { color: var(--color-primary-ink); }
+.harness-validation-item[data-type="success"] { color: var(--color-success-ink); }
 .harness-validation-item[data-type="warning"] { color: #e65100; }
 .harness-validation-item[data-type="error"] { color: var(--color-danger); }
 
@@ -596,16 +596,16 @@ body:has(.harness-editor-container) {
 }
 
 .harness-wizard-step[data-active="true"] {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-border);
   background: var(--color-primary);
   color: var(--color-primary-ink);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary-ring) 18%, transparent);
 }
 
 .harness-wizard-step[data-completed="true"] {
-  border-color: var(--color-primary);
-  background: var(--color-surface-soft);
-  color: var(--color-primary-ink);
+  border-color: var(--color-success-strong);
+  background: var(--color-success);
+  color: var(--color-success-ink);
 }
 
 /* Type Grid */
@@ -629,14 +629,14 @@ body:has(.harness-editor-container) {
 }
 
 .harness-type-card:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-border);
   background: var(--color-surface-soft);
 }
 
 .harness-type-card[data-selected="true"] {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
-  box-shadow: 0 0 0 2px var(--color-primary);
+  border-color: var(--color-primary-border);
+  background: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-ring) 22%, transparent);
 }
 
 .harness-type-card strong {
@@ -771,8 +771,8 @@ body:has(.harness-editor-container) {
 }
 
 .harness-language-select:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-color: var(--color-primary-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-ring) 24%, transparent);
 }
 
 @media (max-width: 34rem) {
@@ -787,7 +787,7 @@ body:has(.harness-editor-container) {
 
 .harness-form-group input:focus,
 .harness-form-group textarea:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-strong);
 }
 
 /* Import modal styling */
@@ -810,11 +810,11 @@ body:has(.harness-editor-container) {
 
 .harness-import-tab[data-active="true"] {
   color: var(--color-ink);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-strong);
 }
 
 .harness-import-inspection-panel {
-  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-canvas));
+  background: color-mix(in srgb, var(--color-primary) 45%, var(--color-canvas));
   border: 1px solid var(--color-outline);
   border-radius: var(--radius-md);
   padding: var(--space-3);
@@ -830,7 +830,7 @@ body:has(.harness-editor-container) {
 /* File Tree Inline Interaction Styles */
 .harness-tree__input {
   background: var(--color-canvas);
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-primary-strong);
   border-radius: 4px;
   padding: 0.2rem 0.4rem;
   color: var(--color-ink);

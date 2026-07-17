@@ -124,7 +124,7 @@
 }
 
 .create-category-form button:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-strong);
 }
 
 /* Category Delete Confirmation Styles */
@@ -208,7 +208,7 @@
 
 .cat-create-input {
   flex: 1;
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--color-primary-strong);
   border-radius: 4px;
   background: var(--color-canvas);
   color: var(--color-ink);
@@ -217,5 +217,4 @@
   outline: 0;
   width: 100%;
 }
-
 

@@ -204,7 +204,7 @@ export function SkillDetailModal({
                 )}
                 {skill.has_executable_content && (
                   skill.trusted ? (
-                    <span className="trusted-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--color-primary-ink)', fontWeight: 500 }}>
+                    <span className="trusted-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--color-success-ink)', fontWeight: 500 }}>
                       <ShieldCheck size={15} /> 已信任此版本
                     </span>
                   ) : (
