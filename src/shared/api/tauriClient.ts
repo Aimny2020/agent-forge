@@ -152,6 +152,14 @@ export async function getSkills(): Promise<Skill[]> {
   }
 }
 
+export async function getSkillDetail(skillId: string): Promise<Skill | null> {
+  try {
+    return await invoke<Skill | null>('get_skill_detail', { skillId });
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
 export async function importSkill(source: string, importType: 'folder' | 'git'): Promise<string> {
   try {
     return await invoke<string>('import_skill', { source, importType });

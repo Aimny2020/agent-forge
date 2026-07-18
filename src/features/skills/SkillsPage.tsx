@@ -5,6 +5,7 @@ import {
   AppError,
   checkSkillUpdates,
   getSkills,
+  getSkillDetail,
   getCategories,
   createCategory,
   renameCategory,
@@ -39,9 +40,15 @@ export function SkillsPage() {
     queryFn: getSkills,
   });
 
+  const { data: detailSkill } = useQuery({
+    queryKey: ['skill-detail', activeDetailId?.skillId],
+    queryFn: () => getSkillDetail(activeDetailId!.skillId),
+    enabled: !!activeDetailId?.skillId,
+  });
+
   const activeDetail = activeDetailId
     ? (() => {
-        const skill = skills.find((s) => s.id === activeDetailId.skillId);
+        const skill = detailSkill ?? skills.find((s) => s.id === activeDetailId.skillId);
         if (!skill) return null;
         const member = skill.members.find((m) => m.id === activeDetailId.memberId);
         return { skill, member };

@@ -12,6 +12,17 @@ pub async fn get_skills(state: State<'_, AppState>) -> Result<Vec<Skill>, Comman
 }
 
 #[tauri::command]
+pub async fn get_skill_detail(
+    state: State<'_, AppState>,
+    skill_id: String,
+) -> Result<Option<Skill>, CommandError> {
+    state
+        .skills
+        .get_skill_detail(&skill_id)
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
 pub async fn import_skill(
     state: State<'_, AppState>,
     source: String,

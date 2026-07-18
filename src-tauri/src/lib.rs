@@ -71,6 +71,7 @@ pub fn run() {
             get_agent_maintenance_plan,
             apply_agent_maintenance,
             get_skills,
+            get_skill_detail,
             import_skill,
             inspect_skill_import,
             delete_skill,

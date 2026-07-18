@@ -785,7 +785,7 @@ impl SkillService {
                         id: member.id,
                         relative_path: member.relative_path,
                         metadata: member.metadata,
-                        html_content: member.html_content,
+                        html_content: String::new(),
                         custom_description: m_desc,
                     });
                 }
@@ -828,7 +828,7 @@ impl SkillService {
                     id: discovered.id,
                     kind: discovered.kind,
                     metadata: discovered.metadata,
-                    html_content: discovered.html_content,
+                    html_content: String::new(),
                     members,
                     category_id,
                     user_notes,
@@ -843,6 +843,84 @@ impl SkillService {
             }
         }
         Ok(list)
+    }
+
+    pub fn get_skill_detail(&self, skill_id: &str) -> DomainResult<Option<Skill>> {
+        let path = self.skills_dir.join(skill_id);
+        if !path.exists() || !path.is_dir() {
+            return Ok(None);
+        }
+        let mut discovered = match scan_skill_root(skill_id, &path) {
+            Ok(d) => d,
+            Err(_) => return Ok(None),
+        };
+        let (category_id, user_notes) = match self.repo.get_user_meta(skill_id)? {
+            Some(meta) => (meta.category_id, meta.user_notes),
+            None => (None, None),
+        };
+        let custom_description = self.repo.get_custom_description(skill_id)?;
+        let mut members = Vec::new();
+        for member in discovered.members {
+            let m_desc = self.repo.get_custom_description(&member.id)?;
+            members.push(SkillMember {
+                id: member.id,
+                relative_path: member.relative_path,
+                metadata: member.metadata,
+                html_content: member.html_content,
+                custom_description: m_desc,
+            });
+        }
+
+        let (mut record, dirty) = self.current_package_record(skill_id, &path)?;
+        if record.source_kind == SourceKind::Git {
+            if let Some(normalized) = record.normalized_source.as_deref() {
+                if let Some(existing) = self.repo.find_skill_by_source(normalized)? {
+                    if existing != skill_id {
+                        discovered
+                            .warnings
+                            .push(format!("Git 来源与已安装的 {existing} 重复"));
+                        record.normalized_source = None;
+                    }
+                }
+            }
+        }
+        let trusted = trust_matches(
+            record.trusted_commit.as_deref(),
+            record.installed_commit.as_deref(),
+            dirty,
+        );
+        self.repo.save_skill_package(&record)?;
+        let source = SkillSourceInfo {
+            kind: record.source_kind,
+            url: record.source_url.clone(),
+            tracked_ref: record.tracked_ref.clone(),
+            installed_commit: record.installed_commit.clone(),
+        };
+        let update_status = if source.kind == SourceKind::Git {
+            if dirty {
+                UpdateStatus::Dirty
+            } else {
+                UpdateStatus::Unknown
+            }
+        } else {
+            UpdateStatus::NotApplicable
+        };
+        Ok(Some(Skill {
+            id: discovered.id,
+            kind: discovered.kind,
+            metadata: discovered.metadata,
+            html_content: discovered.html_content,
+            members,
+            category_id,
+            user_notes,
+            source,
+            update_status,
+            available_commit: None,
+            has_executable_content: discovered.has_executable_content,
+            trusted,
+            warnings: discovered.warnings,
+            custom_description,
+        }))
     }
 
     pub fn import_local_folder(&self, source_path: &str) -> DomainResult<String> {
