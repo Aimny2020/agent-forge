@@ -136,7 +136,10 @@ impl AgentService {
                     .commands
                     .iter()
                     .find_map(|command| find_executable(command));
-                let _version = executable.as_deref().and_then(read_version);
+                let version = executable
+                    .as_deref()
+                    .and_then(read_version)
+                    .and_then(normalize_version);
                 LocalAgent {
                     id: definition.id.into(),
                     product: definition.product.into(),
@@ -148,7 +151,7 @@ impl AgentService {
                     } else {
                         "missing".into()
                     },
-                    version: None,
+                    version,
                     executable_path: executable.map(|path| path.to_string_lossy().to_string()),
                     can_install: can_maintain(definition, "install"),
                     can_update: can_maintain(definition, "update"),
@@ -198,11 +201,7 @@ impl AgentService {
     pub fn check_updates(&self) -> Vec<AgentUpdate> {
         AGENTS
             .iter()
-            .filter_map(|definition| {
-                let package = match definition.maintenance {
-                    AgentMaintenance::Npm(package) => package,
-                    _ => return None,
-                };
+            .map(|definition| {
                 let executable = definition
                     .commands
                     .iter()
@@ -211,19 +210,34 @@ impl AgentService {
                     .as_deref()
                     .and_then(read_version)
                     .and_then(normalize_version);
-                let latest = read_npm_latest_version(package);
-                let status = match (&current, &latest) {
-                    (None, _) => "not_installed",
-                    (Some(_), None) => "unknown",
-                    (Some(current), Some(latest)) if current == latest => "current",
-                    (Some(_), Some(_)) => "available",
+
+                let (latest, status) = match definition.maintenance {
+                    AgentMaintenance::Npm(package) => {
+                        let latest = read_npm_latest_version(package);
+                        let status = match (&current, &latest) {
+                            (None, _) => "not_installed",
+                            (Some(_), None) => "unknown",
+                            (Some(current), Some(latest)) if current == latest => "current",
+                            (Some(_), Some(_)) => "available",
+                        };
+                        (latest, status)
+                    }
+                    _ => {
+                        let status = if current.is_some() || executable.is_some() {
+                            "unknown"
+                        } else {
+                            "not_installed"
+                        };
+                        (None, status)
+                    }
                 };
-                Some(AgentUpdate {
+
+                AgentUpdate {
                     agent_id: definition.id.into(),
                     status: status.into(),
                     current_version: current,
                     latest_version: latest,
-                })
+                }
             })
             .collect()
     }
@@ -721,5 +735,15 @@ mod tests {
             Some("0.42.0")
         );
         assert_eq!(normalize_version("v1.2.3".into()).as_deref(), Some("1.2.3"));
+    }
+
+    #[test]
+    fn check_updates_includes_all_cli_agents() {
+        let service = AgentService::new();
+        let updates = service.check_updates();
+        let agent_ids: Vec<String> = updates.into_iter().map(|u| u.agent_id).collect();
+        assert!(agent_ids.contains(&"claude".to_string()));
+        assert!(agent_ids.contains(&"antigravity".to_string()));
+        assert!(agent_ids.contains(&"gemini".to_string()));
     }
 }
