@@ -347,12 +347,12 @@ mod tests {
             "---\nname: Repo\ndescription: trusted dirty content\n---\n# Repo\n",
         )
         .unwrap();
-        let dirty_skill = service.get_skills().unwrap().remove(0);
+        let dirty_skill = service.get_skill_detail("repo").unwrap().unwrap();
         assert_eq!(dirty_skill.update_status, UpdateStatus::Dirty);
         assert!(!dirty_skill.trusted);
 
         service.trust_skill("repo").unwrap();
-        let trusted_skill = service.get_skills().unwrap().remove(0);
+        let trusted_skill = service.get_skill_detail("repo").unwrap().unwrap();
         assert!(trusted_skill.trusted);
 
         fs::write(
@@ -360,7 +360,7 @@ mod tests {
             "---\nname: Repo\ndescription: changed again\n---\n# Repo\n",
         )
         .unwrap();
-        let changed_skill = service.get_skills().unwrap().remove(0);
+        let changed_skill = service.get_skill_detail("repo").unwrap().unwrap();
         assert!(!changed_skill.trusted);
     }
 
@@ -792,7 +792,7 @@ impl SkillService {
                     });
                 }
 
-                let (mut record, dirty) = self.current_package_record(&skill_id, &path, true)?;
+                let (mut record, dirty) = self.current_package_record(&skill_id, &path, false)?;
                 if record.source_kind == SourceKind::Git {
                     if let Some(normalized) = record.normalized_source.as_deref() {
                         if let Some(existing) = self.repo.find_skill_by_source(normalized)? {
