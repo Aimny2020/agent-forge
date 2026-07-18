@@ -1762,9 +1762,51 @@ fn semantic_version(tag: &str) -> Option<(u64, u64, u64)> {
     parts.next().is_none().then_some(version)
 }
 
+fn is_modified_after(path: &Path, reference: std::time::SystemTime) -> bool {
+    let Ok(meta) = fs::metadata(path) else {
+        return false;
+    };
+    if let Ok(mtime) = meta.modified() {
+        if mtime > reference {
+            return true;
+        }
+    }
+    if meta.is_dir() {
+        if let Ok(entries) = fs::read_dir(path) {
+            for entry in entries.flatten() {
+                if entry.file_name() == ".git" {
+                    continue;
+                }
+                if is_modified_after(&entry.path(), reference) {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
 fn git_worktree_is_dirty(path: &Path) -> DomainResult<bool> {
-    if !path.join(".git").exists() {
+    let git_dir = path.join(".git");
+    if !git_dir.exists() {
         return Ok(false);
+    }
+
+    // Fast path: if .git/index exists and no file in worktree was modified after .git/index,
+    // return false immediately without spawning git.exe subprocesses.
+    let index_path = git_dir.join("index");
+    if let Ok(index_meta) = fs::metadata(&index_path) {
+        if let Ok(index_mtime) = index_meta.modified() {
+            if let Ok(entries) = fs::read_dir(path) {
+                let has_newer = entries
+                    .flatten()
+                    .filter(|e| e.file_name() != ".git")
+                    .any(|e| is_modified_after(&e.path(), index_mtime));
+                if !has_newer {
+                    return Ok(false);
+                }
+            }
+        }
     }
 
     // Check if there are real modifications ignoring CR/LF differences
