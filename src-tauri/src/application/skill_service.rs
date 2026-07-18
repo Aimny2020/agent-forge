@@ -365,6 +365,40 @@ mod tests {
     }
 
     #[test]
+    fn skill_list_does_not_report_a_modified_git_skill_as_trusted() {
+        let fixture = Fixture::new();
+        fixture.skill("repo", "Repo");
+        let repo = fixture.0.join("repo");
+        run_git(&repo, &["init"]);
+        run_git(
+            &repo,
+            &["config", "user.email", "agentpalette@example.test"],
+        );
+        run_git(&repo, &["config", "user.name", "AgentPalette Test"]);
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial"]);
+
+        let db =
+            Arc::new(crate::infrastructure::database::SqliteDatabase::open_in_memory().unwrap());
+        let service = SkillService::with_skills_dir(db, fixture.0.clone());
+
+        service.trust_skill("repo").unwrap();
+        assert!(service.get_skills().unwrap()[0].trusted);
+
+        fs::write(
+            repo.join("SKILL.md"),
+            "---\nname: Repo\ndescription: modified after trust\n---\n# Repo\n",
+        )
+        .unwrap();
+
+        let listed_skill = service.get_skills().unwrap().remove(0);
+        assert!(
+            !listed_skill.trusted,
+            "a Git Skill modified after trust must not remain trusted in the list"
+        );
+    }
+
+    #[test]
     fn local_revision_normalizes_line_endings() {
         use super::local_revision;
         let fixture_lf = Fixture::new();

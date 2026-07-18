@@ -51,4 +51,18 @@ describe('AgentsPage', () => {
     expect(await screen.findByText(/v1.0.5/)).toBeInTheDocument();
     expect(await screen.findByText('已是最新版本')).toBeInTheDocument();
   });
+
+  it('shows an unavailable status after a completed update check has no record', async () => {
+    vi.mocked(tauriClient.getLocalAgents).mockResolvedValue([
+      {
+        id: 'antigravity', product: 'Antigravity', displayName: 'Antigravity CLI', surface: 'cli', command: 'agy', status: 'ready', version: '1.0.5', canInstall: true, canUpdate: true, canUninstall: false,
+      },
+    ]);
+    vi.mocked(tauriClient.checkAgentUpdates).mockResolvedValue([]);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(<QueryClientProvider client={queryClient}><AgentsPage /></QueryClientProvider>);
+
+    expect(await screen.findByText('暂时无法确认更新')).toBeInTheDocument();
+  });
 });

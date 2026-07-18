@@ -1,6 +1,8 @@
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
@@ -211,33 +213,11 @@ impl AgentService {
                     .and_then(read_version)
                     .and_then(normalize_version);
 
-                let (latest, status) = match definition.maintenance {
-                    AgentMaintenance::Npm(package) => {
-                        let latest = read_npm_latest_version(package);
-                        let status = match (&current, &latest) {
-                            (None, _) => "not_installed",
-                            (Some(_), None) => "unknown",
-                            (Some(current), Some(latest)) if current == latest => "current",
-                            (Some(_), Some(_)) => "available",
-                        };
-                        (latest, status)
-                    }
-                    _ => {
-                        let status = if current.is_some() || executable.is_some() {
-                            "unknown"
-                        } else {
-                            "not_installed"
-                        };
-                        (None, status)
-                    }
+                let latest = match definition.maintenance {
+                    AgentMaintenance::Npm(package) => read_npm_latest_version(package),
+                    _ => None,
                 };
-
-                AgentUpdate {
-                    agent_id: definition.id.into(),
-                    status: status.into(),
-                    current_version: current,
-                    latest_version: latest,
-                }
+                create_update(definition, current, latest)
             })
             .collect()
     }
@@ -269,6 +249,29 @@ impl AgentService {
                 format!("npm 未能完成操作：{details}")
             }))
         }
+    }
+}
+
+fn create_update(
+    definition: &AgentDefinition,
+    current_version: Option<String>,
+    latest_version: Option<String>,
+) -> AgentUpdate {
+    let status = match definition.maintenance {
+        AgentMaintenance::Npm(_) => match (&current_version, &latest_version) {
+            (None, _) => "not_installed",
+            (Some(_), None) => "unknown",
+            (Some(current), Some(latest)) if current == latest => "current",
+            (Some(_), Some(_)) => "available",
+        },
+        _ if current_version.is_some() => "unknown",
+        _ => "not_installed",
+    };
+    AgentUpdate {
+        agent_id: definition.id.into(),
+        status: status.into(),
+        current_version,
+        latest_version,
     }
 }
 
@@ -396,17 +399,16 @@ fn normalize_version(raw: String) -> Option<String> {
 
 fn read_npm_latest_version(package: &str) -> Option<String> {
     let npm = find_executable("npm")?;
-    let output = Command::new(npm)
-        .args([
-            "view",
-            package,
-            "version",
-            "--json",
-            "--fetch-retries=0",
-            "--fetch-timeout=3000",
-        ])
-        .output()
-        .ok()?;
+    let mut command = Command::new(npm);
+    command.args([
+        "view",
+        package,
+        "version",
+        "--json",
+        "--fetch-retries=0",
+        "--fetch-timeout=3000",
+    ]);
+    let output = run_command_with_timeout(&mut command, Duration::from_secs(5))?;
     if !output.status.success() {
         return None;
     }
@@ -583,7 +585,9 @@ fn find_executable(command: &str) -> Option<PathBuf> {
 }
 
 fn read_version(executable: &Path) -> Option<String> {
-    let output = Command::new(executable).arg("--version").output().ok()?;
+    let mut command = Command::new(executable);
+    command.arg("--version");
+    let output = run_command_with_timeout(&mut command, Duration::from_secs(5))?;
     if !output.status.success() {
         return None;
     }
@@ -594,6 +598,23 @@ fn read_version(executable: &Path) -> Option<String> {
         .trim()
         .to_string();
     (!value.is_empty()).then_some(value)
+}
+
+fn run_command_with_timeout(command: &mut Command, timeout: Duration) -> Option<Output> {
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command.spawn().ok()?;
+    let started = Instant::now();
+    loop {
+        if child.try_wait().ok()?.is_some() {
+            return child.wait_with_output().ok();
+        }
+        if started.elapsed() >= timeout {
+            let _ = child.kill();
+            let _ = child.wait_with_output();
+            return None;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -689,7 +710,7 @@ fn applescript_quote(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_version, AgentService};
+    use super::{create_update, normalize_version, AgentMaintenance, AgentService, AGENTS};
 
     #[test]
     fn discovery_includes_the_supported_agent_catalog() {
@@ -738,12 +759,34 @@ mod tests {
     }
 
     #[test]
-    fn check_updates_includes_all_cli_agents() {
-        let service = AgentService::new();
-        let updates = service.check_updates();
-        let agent_ids: Vec<String> = updates.into_iter().map(|u| u.agent_id).collect();
-        assert!(agent_ids.contains(&"claude".to_string()));
-        assert!(agent_ids.contains(&"antigravity".to_string()));
-        assert!(agent_ids.contains(&"gemini".to_string()));
+    fn non_npm_agents_return_a_terminal_update_status() {
+        let antigravity = AGENTS
+            .iter()
+            .find(|agent| agent.id == "antigravity")
+            .unwrap();
+        let installed = create_update(antigravity, Some("1.2.3".into()), None);
+        assert_eq!(installed.status, "unknown");
+        assert_eq!(installed.current_version.as_deref(), Some("1.2.3"));
+
+        assert_eq!(
+            create_update(antigravity, None, None).status,
+            "not_installed"
+        );
+    }
+
+    #[test]
+    fn npm_agents_compare_current_and_latest_versions() {
+        let npm_agent = AGENTS
+            .iter()
+            .find(|agent| matches!(agent.maintenance, AgentMaintenance::Npm(_)))
+            .unwrap();
+        assert_eq!(
+            create_update(npm_agent, Some("1.2.3".into()), Some("1.2.3".into())).status,
+            "current"
+        );
+        assert_eq!(
+            create_update(npm_agent, Some("1.2.3".into()), Some("1.2.4".into())).status,
+            "available"
+        );
     }
 }
