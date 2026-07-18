@@ -8,7 +8,11 @@ use tauri::State;
 
 #[tauri::command]
 pub async fn get_skills(state: State<'_, AppState>) -> Result<Vec<Skill>, CommandError> {
-    state.skills.get_skills().map_err(CommandError::from)
+    let service = state.skills.clone();
+    tauri::async_runtime::spawn_blocking(move || service.get_skills())
+        .await
+        .map_err(|e| CommandError::from(DomainError::Database(e.to_string())))?
+        .map_err(CommandError::from)
 }
 
 #[tauri::command]
@@ -16,9 +20,10 @@ pub async fn get_skill_detail(
     state: State<'_, AppState>,
     skill_id: String,
 ) -> Result<Option<Skill>, CommandError> {
-    state
-        .skills
-        .get_skill_detail(&skill_id)
+    let service = state.skills.clone();
+    tauri::async_runtime::spawn_blocking(move || service.get_skill_detail(&skill_id))
+        .await
+        .map_err(|e| CommandError::from(DomainError::Database(e.to_string())))?
         .map_err(CommandError::from)
 }
 

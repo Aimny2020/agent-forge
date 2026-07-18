@@ -19,6 +19,7 @@ use crate::domain::skill::{
 // presenting an empty skill catalog after the product rename.
 const LEGACY_GLOBAL_DATA_DIRECTORY: &str = ".agent-forge";
 
+#[derive(Clone)]
 pub struct SkillService {
     repo: Arc<dyn SkillRepository>,
     skills_dir: PathBuf,
@@ -708,8 +709,9 @@ impl SkillService {
         &self,
         skill_id: &str,
         path: &Path,
+        check_dirty: bool,
     ) -> DomainResult<(SkillPackageRecord, bool)> {
-        let is_git = path.join(".git").exists();
+        let is_git = check_dirty && path.join(".git").exists();
         let dirty = if is_git {
             git_worktree_is_dirty(path).unwrap_or(false)
         } else {
@@ -790,7 +792,7 @@ impl SkillService {
                     });
                 }
 
-                let (mut record, dirty) = self.current_package_record(&skill_id, &path)?;
+                let (mut record, dirty) = self.current_package_record(&skill_id, &path, true)?;
                 if record.source_kind == SourceKind::Git {
                     if let Some(normalized) = record.normalized_source.as_deref() {
                         if let Some(existing) = self.repo.find_skill_by_source(normalized)? {
@@ -871,7 +873,7 @@ impl SkillService {
             });
         }
 
-        let (mut record, dirty) = self.current_package_record(skill_id, &path)?;
+        let (mut record, dirty) = self.current_package_record(skill_id, &path, true)?;
         if record.source_kind == SourceKind::Git {
             if let Some(normalized) = record.normalized_source.as_deref() {
                 if let Some(existing) = self.repo.find_skill_by_source(normalized)? {
@@ -1171,7 +1173,7 @@ impl SkillService {
             )));
         }
         scan_skill_root(skill_id, &path)?;
-        let (mut record, _) = self.current_package_record(skill_id, &path)?;
+        let (mut record, _) = self.current_package_record(skill_id, &path, true)?;
         record.trusted_commit = record.installed_commit.clone();
         self.repo.save_skill_package(&record)
     }
