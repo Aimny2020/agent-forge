@@ -72,12 +72,18 @@ export function SkillsPage() {
   const updateMetaMut = useMutation({
     mutationFn: ({ id, cat, notes }: { id: string; cat: string | null; notes: string | null }) =>
       updateSkillMeta(id, cat, notes),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-detail', id] });
+    },
   });
 
   const deleteSkillMut = useMutation({
     mutationFn: deleteSkill,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
+    onSuccess: (_, skillId) => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-detail', skillId] });
+    },
     onError: (error, skillId) => {
       if (error instanceof AppError && error.details?.includes('enabled in projects')) {
         if (confirm('该扩展包正在被项目使用。是否从所有项目移除后卸载？')) {
@@ -89,22 +95,30 @@ export function SkillsPage() {
 
   const deleteEverywhereMut = useMutation({
     mutationFn: deleteSkillEverywhere,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-detail'] });
+    },
   });
 
   const updateSkillMut = useMutation({
     mutationFn: updateSkill,
-    onSuccess: () => {
+    onSuccess: (_, skillId) => {
       queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-detail', skillId] });
       queryClient.invalidateQueries({ queryKey: ['skill-updates'] });
     },
   });
 
   const trustSkillMut = useMutation({
-    mutationFn: trustSkill,
-    onMutate: async (skillId) => {
-      await queryClient.cancelQueries({ queryKey: ['skills'] });
+    mutationFn: (id: string) => trustSkill(id),
+    onMutate: (skillId) => {
+      queryClient.cancelQueries({ queryKey: ['skills'] });
+      queryClient.cancelQueries({ queryKey: ['skill-detail', skillId] });
+
       const previousSkills = queryClient.getQueryData<Skill[]>(['skills']);
+      const previousDetail = queryClient.getQueryData<Skill>(['skill-detail', skillId]);
+
       queryClient.setQueryData<Skill[]>(['skills'], (current = []) =>
         current.map((skill) =>
           skill.id === skillId
@@ -112,15 +126,27 @@ export function SkillsPage() {
             : skill
         )
       );
-      return { previousSkills };
+
+      if (previousDetail) {
+        queryClient.setQueryData<Skill>(['skill-detail', skillId], {
+          ...previousDetail,
+          trusted: true,
+        });
+      }
+
+      return { previousSkills, previousDetail };
     },
-    onSuccess: () => {
+    onSuccess: (_, skillId) => {
       queryClient.invalidateQueries({ queryKey: ['skills'] });
+      queryClient.invalidateQueries({ queryKey: ['skill-detail', skillId] });
       queryClient.invalidateQueries({ queryKey: ['projectSkills'] });
     },
-    onError: (error, _skillId, context) => {
+    onError: (error, skillId, context) => {
       if (context?.previousSkills) {
         queryClient.setQueryData(['skills'], context.previousSkills);
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(['skill-detail', skillId], context.previousDetail);
       }
       if (error instanceof AppError) {
         alert(`信任失败: ${error.details ?? error.message}`);
