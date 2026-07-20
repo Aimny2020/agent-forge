@@ -2,9 +2,9 @@ import { NavLink } from 'react-router-dom';
 
 const navigation = [
   { label: '项目管理', to: '/projects' },
-  { label: 'Agents', to: '/agents' },
-  { label: 'Skills', to: '/skills' },
-  { label: 'Harness', to: '/harness' },
+  { label: 'Agents管理', to: '/agents' },
+  { label: 'Skills管理', to: '/skills' },
+  { label: 'Harness管理', to: '/harness' },
   { label: '设置', to: '/settings' },
 ];
 

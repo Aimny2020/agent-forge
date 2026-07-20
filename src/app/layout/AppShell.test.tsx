@@ -41,7 +41,7 @@ describe('AppShell', () => {
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByText('AgentPalette')).toBeInTheDocument();
     expect(screen.getByText('跨工具、本地优先的 Agent 工作空间管理器')).toBeInTheDocument();
-    for (const label of ['项目管理', 'Skills', 'Harness', '设置']) {
+    for (const label of ['项目管理', 'Agents管理', 'Skills管理', 'Harness管理', '设置']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
     expect(screen.queryByRole('link', { name: '控制面板' })).not.toBeInTheDocument();
