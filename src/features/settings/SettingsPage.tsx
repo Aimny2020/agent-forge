@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useBlocker } from 'react-router-dom';
 
-import appIcon from '../../../src-tauri/icons/app-icon.svg';
+import appIcon from '../../../src-tauri/icons/icon.png';
 import { getHealth, getLaunchPreferences, saveLaunchPreferences } from '../../shared/api/tauriClient';
 import type { LaunchPreferences, TerminalPreference } from '../../shared/api/types';
 import { useThemeStore, type ThemePreference } from '../../shared/theme/themeStore';
