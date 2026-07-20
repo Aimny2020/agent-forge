@@ -220,7 +220,7 @@ export function SkillDetailModal({
                 取消
               </button>
               <button className="button button--primary" onClick={handleSave} disabled={isLengthExceeded}>
-                保存更改
+                保存
               </button>
             </div>
           </div>
