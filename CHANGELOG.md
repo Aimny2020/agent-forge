@@ -8,6 +8,24 @@
 
 - 完成内部预览安装验证后评估 Linux 构建、正式代码签名和自动更新。
 
+## [1.0.0] - 2026-07-21
+
+### 新增
+
+- 公开发布 AgentPalette，并提供 macOS（Apple Silicon、Intel）与 Windows x64 安装包。
+- 项目管理、本机 Agent 检测与维护、全局 Skills 管理、全局 Harness 模板管理，以及项目级 Skills 与 Harness 配置。
+- 平台启动偏好、主题设置及项目内启动本机 Agent 的工作流。
+
+### 变更
+
+- 项目许可证调整为 Apache License 2.0，并新增贡献与品牌使用说明。
+- GitHub tag 发布流程调整为创建公开正式 Release。
+
+### 限制
+
+- macOS 安装包使用 ad-hoc signing，尚未完成 Apple notarization；Windows 安装包尚未进行代码签名。
+- 暂不提供 Linux、MSI、移动端和自动更新支持。
+
 ## [0.2.1] - 2026-07-13
 
 ### 变更
@@ -34,6 +52,7 @@
 - Windows 安装包未签名。
 - 暂不提供 Linux、MSI、移动端和自动更新支持。
 
-[Unreleased]: https://github.com/Aimny2020/agentpalette/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Aimny2020/agentpalette/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Aimny2020/agentpalette/releases/tag/v1.0.0
 [0.2.1]: https://github.com/Aimny2020/agentpalette/releases/tag/v0.2.1
 [0.1.0]: https://github.com/Aimny2020/agentpalette/releases/tag/v0.1.0

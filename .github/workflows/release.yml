@@ -109,10 +109,10 @@ jobs:
           tagName: v__VERSION__
           releaseName: AgentPalette v__VERSION__
           releaseBody: |
-            AgentPalette internal preview build.
+            AgentPalette 正式发布。
 
-            This release is unsigned on Windows and ad-hoc signed on macOS. See README.md for installation warnings.
-          releaseDraft: true
-          prerelease: true
+            当前 Windows 安装包未签名，macOS 安装包使用 ad-hoc signing。安装前请阅读 README.md 中的安全提示。
+          releaseDraft: false
+          prerelease: false
           uploadUpdaterJson: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
