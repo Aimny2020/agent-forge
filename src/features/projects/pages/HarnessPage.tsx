@@ -199,7 +199,7 @@ export function HarnessPage() {
       {statusQuery.data.state === 'absent' && (
         <div className="project-harness-apply-workspace">
           <aside className="project-harness-template-rail">
-            <div className="project-harness-rail-heading"><div><span className="project-harness-kicker">TEMPLATE LIBRARY</span><h3>选择 Harness 模板</h3></div><span className="project-harness-count">{filteredTemplates.length}</span></div>
+            <div className="project-harness-rail-heading"><div><h3>选择 Harness 模板</h3></div><span className="project-harness-count">{filteredTemplates.length}</span></div>
             <label className="project-harness-search"><Search size={16} /><span className="sr-only">搜索模板</span><input value={templateSearch} onChange={(event) => setTemplateSearch(event.target.value)} placeholder="搜索模板名称" /></label>
             <div className="project-harness-filter-row" aria-label="模板工作类型筛选">
               {([['all', '全部'], ['code', 'Code'], ['document', 'Document'], ['presentation', 'PPT'], ['custom', 'Custom']] as const).map(([value, label]) => <button type="button" key={value} className={templateFilter === value ? 'is-active' : ''} onClick={() => setTemplateFilter(value)}>{label}</button>)}
