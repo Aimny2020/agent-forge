@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getSkills, getProjectSkills, toggleProjectSkill, trustSkill } from '../../../shared/api/tauriClient';
 import type { Skill } from '../../../shared/api/types';
 import { useProjectStore } from '../../../shared/store/projectStore';
@@ -9,6 +10,7 @@ import { PageState } from '../../../shared/ui/PageState';
 import './harness.css';
 
 export function ProjectSkillsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { activeProjectId } = useProjectStore();
   
@@ -41,8 +43,8 @@ export function ProjectSkillsPage() {
     return (
       <PageState
         state="empty"
-        title="尚未选择任何项目"
-        description="请在左侧侧边栏中选择或添加一个项目，以配置该项目启用的技能。"
+        title={t('projects.skills.noProjectTitle')}
+        description={t('projects.skills.noProjectDescription')}
       />
     );
   }
@@ -51,7 +53,7 @@ export function ProjectSkillsPage() {
     return (
       <div className="page-state">
         <div className="loading-dot" />
-        <p>加载项目技能配置...</p>
+        <p>{t('projects.skills.loading')}</p>
       </div>
     );
   }
@@ -77,10 +79,10 @@ export function ProjectSkillsPage() {
   return (
     <div className="page-stack fixed-workspace-page project-skills-page-container">
       <Card className="project-skills-card">
-        <h3>选择启用技能</h3>
+        <h3>{t('projects.skills.title')}</h3>
         {skills.length === 0 ? (
           <p className="muted-copy" style={{ marginTop: '1rem' }}>
-            全局技能库为空，请先前往 "Skills 管理" 页面导入一些技能。
+            {t('projects.skills.empty')}
           </p>
         ) : (
           <div className="harness-skills-list">
@@ -137,16 +139,16 @@ export function ProjectSkillsPage() {
                       <strong>{skill.metadata.name}</strong>
                       {isPack ? (
                         <span className="project-skill-pack-label">
-                          技能扩展包 · {enabledMembersCount}/{skill.members.length} 启用
+                          {t('projects.skills.pack', { enabled: enabledMembersCount, total: skill.members.length })}
                         </span>
                       ) : (
                         <span className="project-skill-pack-label" style={{ visibility: 'hidden', userSelect: 'none' }}>
-                          占位
+                          {t('projects.skills.placeholder')}
                         </span>
                       )}
                       {isUntrusted && (
                         <span className="project-skill-pack-label" style={{ color: '#cf222e', marginLeft: '8px' }}>
-                          (包含可执行内容，请在 Skills 管理页授权信任后启用)
+                          {t('projects.skills.untrusted')}
                         </span>
                       )}
                     </label>
