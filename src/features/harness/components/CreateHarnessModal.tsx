@@ -31,7 +31,7 @@ export function CreateHarnessModal({
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [workType, setWorkType] = useState<WorkType>('code');
-  const [language, setLanguage] = useState<'zh-CN' | 'en'>('zh-CN');
+  const [language, setLanguage] = useState<'zh-CN' | 'en'>('en');
   const [presetId, setPresetId] = useState<string | undefined>();
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [name, setName] = useState('');
