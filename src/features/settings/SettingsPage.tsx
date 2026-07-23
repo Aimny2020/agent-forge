@@ -4,6 +4,7 @@ import {
   AppWindow,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Languages,
   Monitor,
@@ -108,13 +109,14 @@ function GeneralSettings() {
           <Languages aria-hidden="true" size={19} />
           <div><h3 id="language-title">{t('settings.language')}</h3><p>{t('settings.languageDescription')}</p></div>
         </div>
-        <label>
+        <label className="settings-language__select">
           <span className="sr-only">{t('settings.languageLabel')}</span>
           <select aria-label={t('settings.languageLabel')} value={language} onChange={(event) => setLanguage(event.target.value as LanguagePreference)}>
             <option value="system">{t('settings.languageSystem')}</option>
             <option value="zh-CN">{t('settings.languageChinese')}</option>
             <option value="en">{t('settings.languageEnglish')}</option>
           </select>
+          <ChevronDown aria-hidden="true" size={17} />
         </label>
       </section>
     </div>

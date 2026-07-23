@@ -633,11 +633,18 @@ body:has(.fixed-workspace-page) {
 .theme-choice__copy small { grid-column: 2; color: var(--color-muted); font-size: .72rem; }
 .theme-choice__check { position: absolute; right: .65rem; bottom: .75rem; color: var(--color-primary-strong); }
 
-.settings-language { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.settings-language { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 5.5rem; }
 .settings-language__copy { display: flex; align-items: flex-start; gap: .7rem; }
 .settings-language__copy > svg { margin-top: .05rem; color: var(--color-muted); }
-.settings-language select, .settings-select-row select { border: 1px solid var(--color-outline); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); padding: .55rem .65rem; }
-.settings-language select:disabled { cursor: not-allowed; opacity: .72; }
+.settings-language__select { position: relative; display: flex; align-items: center; flex: 0 0 16rem; min-width: 0; }
+.settings-language__select select { width: 100%; min-height: 2.8rem; appearance: none; border: 1px solid var(--color-outline); border-radius: .65rem; background: var(--color-surface); box-shadow: inset 0 1px 0 rgb(255 255 255 / .08), 0 1px 2px rgb(11 28 48 / .06); color: var(--color-ink); cursor: pointer; font: inherit; font-size: .9rem; font-weight: 600; line-height: 1.2; padding: .7rem 2.7rem .7rem .9rem; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.settings-language__select select:hover { border-color: var(--color-primary-border); background: var(--color-surface-soft); }
+.settings-language__select select:focus-visible { outline: none; border-color: var(--color-primary-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-ring) 34%, transparent); }
+.settings-language__select select:disabled { cursor: not-allowed; opacity: .72; }
+.settings-language__select > svg { position: absolute; right: .85rem; pointer-events: none; color: var(--color-muted); transition: color .16s ease, transform .16s ease; }
+.settings-language__select:has(select:hover) > svg, .settings-language__select:has(select:focus-visible) > svg { color: var(--color-primary-strong); }
+.settings-language__select:has(select:focus-visible) > svg { transform: translateY(1px); }
+.settings-select-row select { border: 1px solid var(--color-outline); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); padding: .55rem .65rem; }
 
 .settings-about { display: grid; max-width: 46rem; gap: var(--space-3); }
 .about-product { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) 0; }
@@ -829,6 +836,7 @@ body:has(.fixed-workspace-page) {
   .theme-choice__preview { height: 4.2rem; }
   .theme-choice__check { top: 50%; bottom: auto; transform: translateY(-50%); }
   .settings-language, .about-details > div, .settings-save-bar { align-items: stretch; flex-direction: column; }
+  .settings-language__select { flex-basis: auto; width: 100%; }
   .settings-dialog__actions { align-items: stretch; flex-direction: column-reverse; }
   .settings-dialog__actions .button { width: 100%; }
   .launch-preferences-card--summary { grid-column: auto; }
