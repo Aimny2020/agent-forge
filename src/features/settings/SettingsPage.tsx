@@ -15,33 +15,19 @@ import {
   TerminalSquare,
 } from 'lucide-react';
 import { useBlocker } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import appIcon from '../../../src-tauri/icons/icon.png';
 import { getHealth, getLaunchPreferences, saveLaunchPreferences } from '../../shared/api/tauriClient';
 import type { LaunchPreferences, TerminalPreference } from '../../shared/api/types';
 import { useThemeStore, type ThemePreference } from '../../shared/theme/themeStore';
+import { useLanguageStore } from '../../shared/i18n/languageStore';
+import type { LanguagePreference } from '../../shared/i18n/i18n';
 import { Card } from '../../shared/ui/Card';
 import { PageState } from '../../shared/ui/PageState';
 import { StatusBadge } from '../../shared/ui/StatusBadge';
 
 type SettingsSection = 'general' | 'launch' | 'about';
-
-const sections: Array<{ id: SettingsSection; label: string }> = [
-  { id: 'general', label: '基础设置' },
-  { id: 'launch', label: '平台启动偏好' },
-  { id: 'about', label: '关于' },
-];
-
-const themes: Array<{
-  value: ThemePreference;
-  label: string;
-  detail: string;
-  icon: typeof Monitor;
-}> = [
-  { value: 'system', label: '跟随系统', detail: '自动匹配系统外观', icon: Monitor },
-  { value: 'light', label: '浅色', detail: '始终使用明亮外观', icon: Sun },
-  { value: 'dark', label: '深色', detail: '始终使用深色外观', icon: Moon },
-];
 
 const macosTerminals: Array<{ value: TerminalPreference; label: string; detail: string }> = [
   { value: 'auto', label: '自动选择', detail: '启动时选择首个可用终端。' },
@@ -67,25 +53,33 @@ function PreferenceToggle({ checked, onChange, label, detail }: { checked: boole
 }
 
 function GeneralSettings() {
+  const { t } = useTranslation();
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const themes: Array<{ value: ThemePreference; label: string; detail: string; icon: typeof Monitor }> = [
+    { value: 'system', label: t('theme.system'), detail: t('settings.appearanceSystem'), icon: Monitor },
+    { value: 'light', label: t('theme.light'), detail: t('settings.appearanceLight'), icon: Sun },
+    { value: 'dark', label: t('theme.dark'), detail: t('settings.appearanceDark'), icon: Moon },
+  ];
 
   return (
     <div className="settings-general" aria-labelledby="general-settings-title">
       <div className="settings-section-intro">
         <div className="settings-section-icon"><Palette aria-hidden="true" size={20} /></div>
         <div>
-          <h2 id="general-settings-title">基础设置</h2>
-          <p>调整 AgentPalette 在这台设备上的显示方式。</p>
+          <h2 id="general-settings-title">{t('settings.generalTitle')}</h2>
+          <p>{t('settings.generalDescription')}</p>
         </div>
       </div>
 
       <section className="settings-group" aria-labelledby="appearance-title">
         <div className="settings-group-heading">
-          <div><h3 id="appearance-title">外观主题</h3><p>选择后立即生效，并自动保存在本机。</p></div>
-          <StatusBadge>自动保存</StatusBadge>
+          <div><h3 id="appearance-title">{t('theme.label')}</h3><p>{t('settings.appearanceDescription')}</p></div>
+          <StatusBadge>{t('settings.autoSaved')}</StatusBadge>
         </div>
-        <div className="theme-choice-grid" role="radiogroup" aria-label="外观主题">
+        <div className="theme-choice-grid" role="radiogroup" aria-label={t('theme.label')}>
           {themes.map((option) => {
             const Icon = option.icon;
             return (
@@ -112,12 +106,14 @@ function GeneralSettings() {
       <section className="settings-group settings-language" aria-labelledby="language-title">
         <div className="settings-language__copy">
           <Languages aria-hidden="true" size={19} />
-          <div><h3 id="language-title">语言</h3><p>更多界面语言即将支持。</p></div>
+          <div><h3 id="language-title">{t('settings.language')}</h3><p>{t('settings.languageDescription')}</p></div>
         </div>
         <label>
-          <span className="sr-only">界面语言</span>
-          <select aria-label="界面语言" value="zh-CN" disabled>
-            <option value="zh-CN">简体中文</option>
+          <span className="sr-only">{t('settings.languageLabel')}</span>
+          <select aria-label={t('settings.languageLabel')} value={language} onChange={(event) => setLanguage(event.target.value as LanguagePreference)}>
+            <option value="system">{t('settings.languageSystem')}</option>
+            <option value="zh-CN">{t('settings.languageChinese')}</option>
+            <option value="en">{t('settings.languageEnglish')}</option>
           </select>
         </label>
       </section>
@@ -164,8 +160,14 @@ function LeaveSettingsDialog({ saving, error, onSave, onDiscard, onContinue }: {
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const sections: Array<{ id: SettingsSection; label: string }> = [
+    { id: 'general', label: t('settings.sections.general') },
+    { id: 'launch', label: t('settings.sections.launch') },
+    { id: 'about', label: t('settings.sections.about') },
+  ];
   const health = useQuery({ queryKey: ['health'], queryFn: getHealth, enabled: activeSection !== 'general' });
   const preferences = useQuery({ queryKey: ['launchPreferences'], queryFn: getLaunchPreferences, enabled: activeSection === 'launch' });
   const [draft, setDraft] = useState<LaunchPreferences | null>(null);
@@ -208,10 +210,10 @@ export function SettingsPage() {
   return (
     <div className="page-stack fixed-workspace-page settings-page-container">
       <header className="page-header settings-page-header">
-        <div><h1>设置</h1><p>管理 AgentPalette 的外观、启动方式与应用信息。</p></div>
+        <div><h1>{t('settings.title')}</h1><p>{t('settings.description')}</p></div>
       </header>
 
-      <nav className="settings-section-tabs" aria-label="设置分类">
+      <nav className="settings-section-tabs" aria-label={t('settings.sectionsLabel')}>
         {sections.map((section) => (
           <button
             type="button"

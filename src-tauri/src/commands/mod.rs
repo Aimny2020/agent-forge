@@ -11,7 +11,6 @@ use crate::domain::error::DomainError;
 #[serde(rename_all = "camelCase")]
 pub struct CommandError {
     pub code: String,
-    pub message: String,
     pub details: Option<String>,
 }
 
@@ -20,17 +19,14 @@ impl From<DomainError> for CommandError {
         match error {
             DomainError::Database(details) => Self {
                 code: "database_unavailable".into(),
-                message: "本地数据库暂时不可用，请重试。".into(),
                 details: Some(details),
             },
             DomainError::AppDataDirectory => Self {
                 code: "app_data_unavailable".into(),
-                message: "无法访问 AgentPalette 数据目录。".into(),
                 details: None,
             },
             DomainError::Operation(details) => Self {
                 code: "operation_unavailable".into(),
-                message: "当前 Agent 操作无法完成，请检查安装与启动偏好。".into(),
                 details: Some(details),
             },
         }
@@ -48,7 +44,7 @@ mod tests {
         let error = CommandError::from(DomainError::Database("file is locked".into()));
 
         assert_eq!(error.code, "database_unavailable");
-        assert_eq!(error.message, "本地数据库暂时不可用，请重试。");
+        assert_eq!(error.code, "database_unavailable");
         assert_eq!(error.details.as_deref(), Some("file is locked"));
     }
 }

@@ -63,7 +63,6 @@ export interface AgentMaintenancePlan {
 
 export interface CommandFailure {
   code: string;
-  message: string;
   details?: string;
 }
 

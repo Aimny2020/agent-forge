@@ -12,7 +12,7 @@ describe('ThemeToggle', () => {
     const user = userEvent.setup();
     render(<ThemeToggle />);
 
-    await user.selectOptions(screen.getByRole('combobox', { name: '外观主题' }), 'dark');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Appearance' }), 'dark');
 
     expect(useThemeStore.getState().theme).toBe('dark');
   });

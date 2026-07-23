@@ -17,6 +17,8 @@ vi.mock('../../shared/api/tauriClient', () => ({
 }));
 
 import { useThemeStore } from '../../shared/theme/themeStore';
+import i18n from '../../shared/i18n/i18n';
+import { useLanguageStore } from '../../shared/i18n/languageStore';
 import { SettingsPage } from './SettingsPage';
 
 const preferences = {
@@ -40,9 +42,11 @@ function renderPage() {
 }
 
 describe('SettingsPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     useThemeStore.setState({ theme: 'system' });
+    useLanguageStore.setState({ language: 'zh-CN' });
+    await i18n.changeLanguage('zh-CN');
     getHealthMock.mockResolvedValue({ version: '0.2.1', platform: 'macos', database: 'ready', ready: true });
     getLaunchPreferencesMock.mockResolvedValue(preferences);
     saveLaunchPreferencesMock.mockImplementation(async (value) => value);
@@ -53,13 +57,23 @@ describe('SettingsPage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: '基础设置', level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: '界面语言' })).toBeDisabled();
     expect(screen.getByRole('combobox', { name: '界面语言' })).toHaveValue('zh-CN');
     expect(getHealthMock).not.toHaveBeenCalled();
     expect(getLaunchPreferencesMock).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('radio', { name: /深色/ }));
     expect(useThemeStore.getState().theme).toBe('dark');
+  });
+
+  it('switches the interface language immediately', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: '界面语言' }), 'en');
+
+    expect(await screen.findByRole('heading', { name: 'General', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Display language' })).toHaveValue('en');
+    expect(useLanguageStore.getState().language).toBe('en');
   });
 
   it('shows macOS terminal preferences and saves the selected value', async () => {

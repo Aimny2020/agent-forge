@@ -1,21 +1,22 @@
 import { NavLink } from 'react-router-dom';
-
-const navigation = [
-  { label: '项目管理', to: '/projects' },
-  { label: 'Agents管理', to: '/agents' },
-  { label: 'Skills管理', to: '/skills' },
-  { label: 'Harness管理', to: '/harness' },
-  { label: '设置', to: '/settings' },
-];
+import { useTranslation } from 'react-i18next';
 
 export function TopNavigation() {
+  const { t } = useTranslation();
+  const navigation = [
+    { label: t('navigation.projects'), to: '/projects' },
+    { label: t('navigation.agents'), to: '/agents' },
+    { label: t('navigation.skills'), to: '/skills' },
+    { label: t('navigation.harness'), to: '/harness' },
+    { label: t('navigation.settings'), to: '/settings' },
+  ];
   return (
     <header className="top-navigation">
       <div className="brand-lockup">
         <strong>AgentPalette</strong>
-        <span>跨工具、本地优先的 Agent 工作空间管理器</span>
+        <span>{t('navigation.productTagline')}</span>
       </div>
-      <nav className="global-navigation" aria-label="全局导航">
+      <nav className="global-navigation" aria-label={t('navigation.globalNavigation')}>
         {navigation.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.to === '/'}>
             {item.label}

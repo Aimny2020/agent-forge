@@ -41,7 +41,7 @@ describe('foundation routes', () => {
     ['/skills', 'Skills 管理'],
     ['/agents', 'Agents 管理'],
     ['/tasks', '任务中心'],
-    ['/settings', '设置'],
+    ['/settings', 'Settings'],
   ])('renders %s as %s', async (path, heading) => {
     const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import i18n from '../i18n/i18n';
 
 import type {
   CommandFailure,
@@ -48,9 +49,7 @@ function isCommandFailure(value: unknown): value is CommandFailure {
     typeof value === 'object' &&
     value !== null &&
     'code' in value &&
-    typeof value.code === 'string' &&
-    'message' in value &&
-    typeof value.message === 'string'
+    typeof value.code === 'string'
   );
 }
 
@@ -58,12 +57,12 @@ function normalizeError(error: unknown): AppError {
   if (isCommandFailure(error)) {
     return new AppError(
       error.code,
-      error.message,
+      i18n.t(`errors.${error.code}`, { defaultValue: i18n.t('errors.unknown_error') }),
       typeof error.details === 'string' ? error.details : undefined,
     );
   }
 
-  return new AppError('unknown_error', '发生未知错误，请重试。');
+  return new AppError('unknown_error', i18n.t('errors.unknown_error'));
 }
 
 export async function getHealth(): Promise<HealthReport> {

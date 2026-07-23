@@ -27,10 +27,12 @@ import {
   getAgentMaintenancePlan,
   applyAgentMaintenance,
 } from './tauriClient';
+import i18n from '../i18n/i18n';
 
 describe('tauriClient', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     invokeMock.mockReset();
+    await i18n.changeLanguage('zh-CN');
   });
 
   it('returns a typed health report', async () => {
@@ -53,7 +55,6 @@ describe('tauriClient', () => {
   it('maps command failures to AppError', async () => {
     invokeMock.mockRejectedValue({
       code: 'database_unavailable',
-      message: '本地数据库暂时不可用，请重试。',
       details: 'file is locked',
     });
 

@@ -40,8 +40,8 @@ describe('AppShell', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByText('AgentPalette')).toBeInTheDocument();
-    expect(screen.getByText('跨工具、本地优先的 Agent 工作空间管理器')).toBeInTheDocument();
-    for (const label of ['项目管理', 'Agents管理', 'Skills管理', 'Harness管理', '设置']) {
+    expect(screen.getByText('A local-first workspace for agents across tools')).toBeInTheDocument();
+    for (const label of ['Projects', 'Agents', 'Skills', 'Harnesses', 'Settings']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
     expect(screen.queryByRole('link', { name: '控制面板' })).not.toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('AppShell', () => {
     expect(screen.queryByRole('combobox', { name: '外观主题' })).not.toBeInTheDocument();
     // Wait for the query to resolve and show the project
     expect(await screen.findByText('AgentPalette Core')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '项目管理' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute(
       'aria-current',
       'page',
     );

@@ -21,7 +21,6 @@ pub async fn launch_agent(
         .map_err(CommandError::from)?
         .ok_or_else(|| CommandError {
             code: "project_not_found".into(),
-            message: "找不到已选项目。".into(),
             details: None,
         })?;
     let preferences = state
