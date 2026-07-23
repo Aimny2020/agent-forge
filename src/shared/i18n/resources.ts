@@ -62,6 +62,11 @@ export const resources = {
         detectAgentsError: '无法检测本机 Agent，请重试。', launchAgentError: '无法启动 Agent，请检查启动偏好。', openDesktopError: '无法打开桌面应用，请重新检测或检查系统权限。',
         launchSucceeded: '已交给终端启动；项目目录不会被复制。', configureLaunch: '配置平台启动偏好',
       },
+      skills: {
+        categories: '技能分类', newCategory: '新建分类', all: '全部技能', uncategorized: '未分类', newCategoryPlaceholder: '新分类名称…', confirmDelete: '确认删除',
+        deleteTitle: '删除技能', occupiedTitle: '该技能正在被项目使用', occupiedIntro: '该技能包已在以下项目中启用，无法直接删除：', occupiedDetail: '如果选择继续，系统将自动从以上项目中移除并禁用此技能，然后彻底删除本地源文件。',
+        deletePrompt: '你确定要永久删除技能 {{name}} 吗？', deleteWarning: '此操作将直接从磁盘中删除该技能的所有源文件，且不可逆。', deleteFailed: '删除失败，请重试。', deleting: '正在删除…', removingAndDeleting: '正在移除并删除…', removeAndDelete: '一键移除并彻底删除',
+      },
     },
   },
   en: {
@@ -126,6 +131,11 @@ export const resources = {
         desktopApp: 'Desktop app', commandLine: 'Command-line CLI', open: 'Open', noAgents: 'No launchable Agents found. Install or detect one from the Agents page.',
         detectAgentsError: 'Unable to detect local Agents. Please try again.', launchAgentError: 'Unable to launch the Agent. Check launch preferences.', openDesktopError: 'Unable to open the desktop app. Check permissions and try again.',
         launchSucceeded: 'The command was sent to your terminal; the project folder was not copied.', configureLaunch: 'Configure launch preferences',
+      },
+      skills: {
+        categories: 'Skill categories', newCategory: 'Create category', all: 'All Skills', uncategorized: 'Uncategorized', newCategoryPlaceholder: 'New category name…', confirmDelete: 'Confirm deletion',
+        deleteTitle: 'Delete Skill', occupiedTitle: 'This Skill is in use', occupiedIntro: 'This Skill pack is enabled in the following projects and cannot be deleted directly:', occupiedDetail: 'If you continue, it will be removed and disabled in those projects before its local source files are permanently deleted.',
+        deletePrompt: 'Permanently delete {{name}}?', deleteWarning: 'All source files for this Skill will be deleted from disk. This cannot be undone.', deleteFailed: 'Deletion failed. Please try again.', deleting: 'Deleting…', removingAndDeleting: 'Removing and deleting…', removeAndDelete: 'Remove everywhere and delete',
       },
     },
   },

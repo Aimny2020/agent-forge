@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, FolderOpen } from 'lucide-react';
 import { Category } from '../../../shared/api/types';
+import { useTranslation } from 'react-i18next';
 import './sidebar.css';
 
 interface Props {
@@ -22,6 +23,7 @@ export function SkillsSidebar({
   onRenameCategory,
   onDeleteCategory,
 }: Props) {
+  const { t } = useTranslation();
   const [newCatName, setNewCatName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -31,7 +33,7 @@ export function SkillsSidebar({
   return (
     <aside className="skills-sidebar">
       <div className="sidebar-heading-row">
-        <h3>技能分类</h3>
+        <h3>{t('skills.categories')}</h3>
         <button
           type="button"
           className="create-cat-btn"
@@ -39,7 +41,7 @@ export function SkillsSidebar({
             setIsCreatingCat(true);
             setNewCatName('');
           }}
-          title="新建分类"
+          title={t('skills.newCategory')}
         >
           <Plus size={14} />
         </button>
@@ -50,7 +52,7 @@ export function SkillsSidebar({
           onClick={() => onSelectCategory(null)}
         >
           <FolderOpen size={16} />
-          <span className="cat-name">全部技能</span>
+          <span className="cat-name">{t('skills.all')}</span>
           <span className="count-badge">{skillsCountMap['all'] || 0}</span>
         </li>
         <li
@@ -58,7 +60,7 @@ export function SkillsSidebar({
           onClick={() => onSelectCategory('uncategorized')}
         >
           <FolderOpen size={16} />
-          <span className="cat-name">未分类</span>
+          <span className="cat-name">{t('skills.uncategorized')}</span>
           <span className="count-badge">{skillsCountMap['uncategorized'] || 0}</span>
         </li>
         {categories.map((cat) => {
@@ -99,13 +101,13 @@ export function SkillsSidebar({
                       <button
                         type="button"
                         className="cat-confirm-btn cat-confirm-btn--yes"
-                        title="确认删除"
+                        title={t('skills.confirmDelete')}
                         onClick={() => {
                           onDeleteCategory(cat.id);
                           setDeletingId(null);
                         }}
                       >
-                        确认
+                        {t('projects.confirm')}
                       </button>
                       <button
                         type="button"
@@ -113,7 +115,7 @@ export function SkillsSidebar({
                         title="取消"
                         onClick={() => setDeletingId(null)}
                       >
-                        取消
+                        {t('common.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -150,7 +152,7 @@ export function SkillsSidebar({
               className="cat-create-input"
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="新分类名称..."
+              placeholder={t('skills.newCategoryPlaceholder')}
               autoFocus
               onBlur={() => {
                 setTimeout(() => {

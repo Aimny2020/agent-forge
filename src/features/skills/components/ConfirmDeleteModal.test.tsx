@@ -32,11 +32,10 @@ describe('ConfirmDeleteModal', () => {
       />
     );
 
-    expect(screen.getByText('删除技能')).toBeInTheDocument();
-    expect(screen.getByText(/确定要永久删除技能/)).toBeInTheDocument();
-    expect(screen.getByText('Taste Skill')).toBeInTheDocument();
+    expect(screen.getByText('Delete Skill')).toBeInTheDocument();
+    expect(screen.getByText(/Permanently delete/)).toBeInTheDocument();
 
-    const confirmBtn = screen.getByText('确认删除');
+    const confirmBtn = screen.getByText('Confirm deletion');
     await act(async () => {
       fireEvent.click(confirmBtn);
     });
@@ -60,19 +59,19 @@ describe('ConfirmDeleteModal', () => {
       />
     );
 
-    const confirmBtn = screen.getByText('确认删除');
+    const confirmBtn = screen.getByText('Confirm deletion');
     await act(async () => {
       fireEvent.click(confirmBtn);
     });
 
     // Should transition to State B: Project occupied warning
-    expect(screen.getByText('该技能正在被项目使用')).toBeInTheDocument();
+    expect(screen.getByText('This Skill is in use')).toBeInTheDocument();
     expect(screen.getByText('project-alpha')).toBeInTheDocument();
     expect(screen.getByText('project-beta')).toBeInTheDocument();
-    expect(screen.queryByText('确认删除')).not.toBeInTheDocument();
+    expect(screen.queryByText('Confirm deletion')).not.toBeInTheDocument();
 
     // Click force delete button
-    const forceConfirmBtn = screen.getByText('一键移除并彻底删除');
+    const forceConfirmBtn = screen.getByText('Remove everywhere and delete');
     await act(async () => {
       fireEvent.click(forceConfirmBtn);
     });
@@ -98,14 +97,14 @@ describe('ConfirmDeleteModal', () => {
       />
     );
 
-    const confirmBtn = screen.getByText('确认删除');
+    const confirmBtn = screen.getByText('Confirm deletion');
     await act(async () => {
       fireEvent.click(confirmBtn);
     });
 
-    expect(screen.getByText('该技能正在被项目使用')).toBeInTheDocument();
+    expect(screen.getByText('This Skill is in use')).toBeInTheDocument();
     expect(screen.getByText('project-x')).toBeInTheDocument();
     expect(screen.getByText('project-y')).toBeInTheDocument();
-    expect(screen.queryByText('确认删除')).not.toBeInTheDocument();
+    expect(screen.queryByText('Confirm deletion')).not.toBeInTheDocument();
   });
 });
