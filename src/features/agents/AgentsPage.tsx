@@ -82,24 +82,25 @@ function MaintenanceConfirmation({
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const label = plan.action === 'install' ? '安装' : plan.action === 'update' ? '更新' : '卸载';
+  const { t } = useTranslation();
+  const actionLabel = plan.action === 'install' ? t('agents.install') : plan.action === 'update' ? t('agents.update') : t('agents.uninstall');
   const dangerous = plan.action === 'uninstall';
   return (
     <div className="modal-overlay" onClick={isApplying ? undefined : onClose}>
       <div className="modal-body compact-modal agent-maintenance-modal" role="dialog" aria-modal="true" aria-labelledby="agent-maintenance-title" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
-          <h3 id="agent-maintenance-title">确认{label} Agent</h3>
-          <button type="button" className="close-btn" onClick={onClose} disabled={isApplying} aria-label="关闭"><X size={20} /></button>
+          <h3 id="agent-maintenance-title">{t('agents.confirmAction', { action: actionLabel })}</h3>
+          <button type="button" className="close-btn" onClick={onClose} disabled={isApplying} aria-label={t('agents.close')}><X size={20} /></button>
         </div>
         <div className="agent-maintenance-modal__content">
-          <p>AgentPalette 将在本机执行以下受控命令：</p>
+          <p>{t('agents.controlledCommand')}</p>
           <code>{plan.command}</code>
-          {dangerous && <p className="agent-maintenance-modal__warning">卸载会移除该 CLI 的全局安装。项目和聊天记录不会被删除。</p>}
+          {dangerous && <p className="agent-maintenance-modal__warning">{t('agents.uninstallWarning')}</p>}
           {error && <p className="project-agent-error">{error}</p>}
         </div>
         <div className="actions-footer">
-          <button type="button" className="button button--secondary" onClick={onClose} disabled={isApplying}>取消</button>
-          <button type="button" className={dangerous ? 'button button--danger' : 'button button--primary'} onClick={onConfirm} disabled={isApplying}>{isApplying ? `正在${label}...` : `确认${label}`}</button>
+          <button type="button" className="button button--secondary" onClick={onClose} disabled={isApplying}>{t('common.cancel')}</button>
+          <button type="button" className={dangerous ? 'button button--danger' : 'button button--primary'} onClick={onConfirm} disabled={isApplying}>{isApplying ? t('agents.applying', { action: actionLabel }) : t('agents.confirm', { action: actionLabel })}</button>
         </div>
       </div>
     </div>
@@ -107,6 +108,7 @@ function MaintenanceConfirmation({
 }
 
 export function AgentsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [surface, setSurface] = useState<'cli' | 'desktop'>('cli');
   const [search, setSearch] = useState('');
@@ -144,23 +146,23 @@ export function AgentsPage() {
     try {
       setPlan(await getAgentMaintenancePlan(agentId, action));
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : '无法准备该操作，请重试。');
+      setActionError(error instanceof Error ? error.message : t('agents.prepareError'));
     }
   };
 
-  if (agents.isLoading) return <PageState state="loading" label="正在检测本机 Agent..." />;
-  if (agents.isError) return <PageState state="error" title="无法检测本机 Agent" description="请检查系统环境后重试。" onRetry={() => void agents.refetch()} />;
+  if (agents.isLoading) return <PageState state="loading" label={t('agents.loading')} />;
+  if (agents.isError) return <PageState state="error" title={t('agents.loadErrorTitle')} description={t('agents.loadErrorDescription')} onRetry={() => void agents.refetch()} />;
   return <div className="page-stack agents-page">
-    <header className="page-header agents-page__header"><div><h1>Agents 管理</h1><span>发现、启动并维护本机 Agent。</span></div><button type="button" className="button button--secondary" onClick={() => void refresh()} disabled={agents.isFetching || updates.isFetching}><RefreshCw size={15} /> {agents.isFetching ? '检测中...' : '重新检测'}</button></header>
+    <header className="page-header agents-page__header"><div><h1>{t('agents.title')}</h1><span>{t('agents.description')}</span></div><button type="button" className="button button--secondary" onClick={() => void refresh()} disabled={agents.isFetching || updates.isFetching}><RefreshCw size={15} /> {agents.isFetching ? t('agents.searching') : t('agents.refresh')}</button></header>
     <div className="agents-toolbar">
-      <label className="agent-search"><Search size={15} /><input placeholder="搜索 Agent" value={search} onChange={(event) => setSearch(event.target.value)} aria-label="搜索 Agent" /></label>
-      <div className="agents-tabs" role="tablist" aria-label="Agent 类型"><button type="button" role="tab" aria-selected={surface === 'cli'} className={surface === 'cli' ? 'is-active' : ''} onClick={() => setSurface('cli')}>命令行 CLI <span>{counts.cli}</span></button><button type="button" role="tab" aria-selected={surface === 'desktop'} className={surface === 'desktop' ? 'is-active' : ''} onClick={() => setSurface('desktop')}>桌面客户端 <span>{counts.desktop}</span></button></div>
+      <label className="agent-search"><Search size={15} /><input placeholder={t('agents.search')} value={search} onChange={(event) => setSearch(event.target.value)} aria-label={t('agents.search')} /></label>
+      <div className="agents-tabs" role="tablist" aria-label={t('agents.type')}><button type="button" role="tab" aria-selected={surface === 'cli'} className={surface === 'cli' ? 'is-active' : ''} onClick={() => setSurface('cli')}>{t('agents.cli')} <span>{counts.cli}</span></button><button type="button" role="tab" aria-selected={surface === 'desktop'} className={surface === 'desktop' ? 'is-active' : ''} onClick={() => setSurface('desktop')}>{t('agents.desktop')} <span>{counts.desktop}</span></button></div>
     </div>
-    {updates.isFetching && surface === 'cli' && <p className="agent-auto-check">正在自动检查可维护 CLI 的版本...</p>}
-    <section className="agent-tile-grid" aria-label={surface === 'cli' ? '命令行 CLI' : '桌面客户端'}>{visible.map((agent) => <AgentTile key={agent.id} agent={agent} update={updatesByAgent.get(agent.id)} isFetching={updates.isFetching} onOpen={() => openMutation.mutate(agent.id)} onMaintain={(action) => void requestMaintenance(agent.id, action)} isOpening={openMutation.isPending && openMutation.variables === agent.id} />)}</section>
-    {!visible.length && <PageState state="empty" title="没有匹配的 Agent" description="尝试使用不同的搜索词。" />}
+    {updates.isFetching && surface === 'cli' && <p className="agent-auto-check">{t('agents.autoCheck')}</p>}
+    <section className="agent-tile-grid" aria-label={surface === 'cli' ? t('agents.cli') : t('agents.desktop')}>{visible.map((agent) => <AgentTile key={agent.id} agent={agent} update={updatesByAgent.get(agent.id)} isFetching={updates.isFetching} onOpen={() => openMutation.mutate(agent.id)} onMaintain={(action) => void requestMaintenance(agent.id, action)} isOpening={openMutation.isPending && openMutation.variables === agent.id} />)}</section>
+    {!visible.length && <PageState state="empty" title={t('agents.emptyTitle')} description={t('agents.emptyDescription')} />}
     {actionError && !plan && <p className="project-agent-error">{actionError}</p>}
-    {openMutation.isError && <p className="project-agent-error">无法打开桌面客户端，请重新检测或检查系统应用权限。</p>}
+    {openMutation.isError && <p className="project-agent-error">{t('agents.openError')}</p>}
     {plan && <MaintenanceConfirmation plan={plan} isApplying={applyMutation.isPending} error={actionError} onClose={() => { setPlan(null); setActionError(null); }} onConfirm={() => applyMutation.mutate({ agentId: plan.agentId, action: plan.action })} />}
   </div>;
 }
