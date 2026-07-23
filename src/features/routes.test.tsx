@@ -36,8 +36,8 @@ describe('foundation routes', () => {
   });
 
   it.each([
-    ['/', '项目管理'],
-    ['/projects', '项目管理'],
+    ['/', 'Projects'],
+    ['/projects', 'Projects'],
     ['/skills', 'Skills 管理'],
     ['/agents', 'Agents 管理'],
     ['/tasks', '任务中心'],
@@ -63,8 +63,8 @@ describe('foundation routes', () => {
       </QueryClientProvider>,
     );
 
-    const projectNav = await screen.findByRole('navigation', { name: '项目详情' });
-    for (const tab of ['主页', 'Harness', 'Skills']) {
+    const projectNav = await screen.findByRole('navigation', { name: 'Project details' });
+    for (const tab of ['Overview', 'Harness', 'Skills']) {
       expect(within(projectNav).getByRole('link', { name: tab })).toBeInTheDocument();
     }
   });

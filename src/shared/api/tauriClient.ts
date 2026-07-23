@@ -298,9 +298,9 @@ export async function addProject(path: string): Promise<Project> {
   }
 }
 
-export async function selectDirectory(): Promise<string | null> {
+export async function selectDirectory(title: string): Promise<string | null> {
   try {
-    return await invoke<string | null>('select_directory');
+    return await invoke<string | null>('select_directory', { title });
   } catch (error) {
     throw normalizeError(error);
   }

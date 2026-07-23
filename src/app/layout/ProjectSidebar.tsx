@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProjects, addProject, selectDirectory } from '../../shared/api/tauriClient';
 import { useProjectStore } from '../../shared/store/projectStore';
+import { useTranslation } from 'react-i18next';
 
 export function ProjectSidebar() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { activeProjectId, setActiveProjectId } = useProjectStore();
 
@@ -42,7 +44,7 @@ export function ProjectSidebar() {
 
   const handleAddProject = async () => {
     try {
-      const selectedPath = await selectDirectory();
+      const selectedPath = await selectDirectory(t('projects.selectDirectoryTitle'));
       if (selectedPath) {
         addProjectMut.mutate(selectedPath);
       }
@@ -52,11 +54,11 @@ export function ProjectSidebar() {
   };
 
   return (
-    <aside className="project-sidebar" aria-label="项目列表">
+    <aside className="project-sidebar" aria-label={t('projects.sidebarLabel')}>
       <div className="sidebar-heading">
-        <h2>我的项目</h2>
+        <h2>{t('projects.myProjects')}</h2>
         <button type="button" onClick={handleAddProject} disabled={addProjectMut.isPending}>
-          {addProjectMut.isPending ? '添加中...' : '＋ 添加'}
+          {addProjectMut.isPending ? t('projects.adding') : t('projects.add')}
         </button>
       </div>
       <ul className="project-list">
@@ -79,7 +81,7 @@ export function ProjectSidebar() {
         })}
         {projects.length === 0 && (
           <li className="project-item-empty" style={{ padding: '1rem', textAlign: 'center', opacity: 0.5 }}>
-            暂无项目，请点击上方按钮添加。
+            {t('projects.empty')}
           </li>
         )}
       </ul>

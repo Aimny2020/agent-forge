@@ -1,11 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { AppWindow, CircleAlert, ExternalLink, TerminalSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getLocalAgents, getProjectSkills, launchAgent, openDesktopAgent } from '../../../shared/api/tauriClient';
 import { useProjectStore } from '../../../shared/store/projectStore';
 import { Card } from '../../../shared/ui/Card';
 
 export function ProjectOverview() {
+  const { t } = useTranslation();
   const { activeProjectId } = useProjectStore();
 
   // Query enabled skills for the active project
@@ -22,7 +24,7 @@ export function ProjectOverview() {
   return (
     <div className="content-grid fixed-workspace-page project-overview-page">
       <Card>
-        <h2>配置摘要</h2>
+        <h2>{t('projects.summary')}</h2>
         <dl className="definition-list">
           <div>
             <dt>Harness</dt>
@@ -43,18 +45,18 @@ export function ProjectOverview() {
         </dl>
       </Card>
       <Card className="project-launch-card">
-        <h2>在此项目中启动 Agent</h2>
-        {!activeProjectId ? <p className="muted-copy">选择项目后，可直接在该项目目录启动本机 Agent。</p> : agents.isLoading ? <p className="muted-copy">正在检测本机 Agent...</p> : availableAgents.length ? <div className="project-agent-list">
+        <h2>{t('projects.launchAgent')}</h2>
+        {!activeProjectId ? <p className="muted-copy">{t('projects.selectProjectToLaunch')}</p> : agents.isLoading ? <p className="muted-copy">{t('projects.detectingAgents')}</p> : availableAgents.length ? <div className="project-agent-list">
           {availableAgents.map((agent) => <div className="project-agent-row" key={agent.id}>
-            <div><strong>{agent.displayName}</strong><small>{agent.version || (agent.surface === 'desktop' ? '桌面应用' : '命令行 CLI')}</small></div>
-            {agent.surface === 'cli' ? <button type="button" className="button button--primary project-agent-row__launch" disabled={launchMutation.isPending} onClick={() => launchMutation.mutate(agent.id)}><ExternalLink size={15} /> 打开</button> : <button type="button" className="button button--primary project-agent-row__launch" disabled={openDesktopMutation.isPending} onClick={() => openDesktopMutation.mutate(agent.id)}><AppWindow size={15} /> 打开</button>}
+            <div><strong>{agent.displayName}</strong><small>{agent.version || (agent.surface === 'desktop' ? t('projects.desktopApp') : t('projects.commandLine'))}</small></div>
+            {agent.surface === 'cli' ? <button type="button" className="button button--primary project-agent-row__launch" disabled={launchMutation.isPending} onClick={() => launchMutation.mutate(agent.id)}><ExternalLink size={15} /> {t('projects.open')}</button> : <button type="button" className="button button--primary project-agent-row__launch" disabled={openDesktopMutation.isPending} onClick={() => openDesktopMutation.mutate(agent.id)}><AppWindow size={15} /> {t('projects.open')}</button>}
           </div>)}
-        </div> : <p className="muted-copy">未发现可启动的 Agent。请前往 Agents 管理页安装或检测。</p>}
-        {agents.isError && <p className="project-agent-error"><CircleAlert size={15} /> 无法检测本机 Agent，请重试。</p>}
-        {launchMutation.isError && <p className="project-agent-error"><CircleAlert size={15} /> {launchMutation.error instanceof Error ? launchMutation.error.message : '无法启动 Agent，请检查启动偏好。'}</p>}
-        {openDesktopMutation.isError && <p className="project-agent-error"><CircleAlert size={15} /> 无法打开桌面应用，请重新检测或检查系统权限。</p>}
-        {launchMutation.isSuccess && <p className="project-agent-success">已交给终端启动；项目目录不会被复制。</p>}
-        <Link className="button button--secondary project-launch-card__action" to="/settings"><TerminalSquare size={16} /> 配置平台启动偏好</Link>
+        </div> : <p className="muted-copy">{t('projects.noAgents')}</p>}
+        {agents.isError && <p className="project-agent-error"><CircleAlert size={15} /> {t('projects.detectAgentsError')}</p>}
+        {launchMutation.isError && <p className="project-agent-error"><CircleAlert size={15} /> {launchMutation.error instanceof Error ? launchMutation.error.message : t('projects.launchAgentError')}</p>}
+        {openDesktopMutation.isError && <p className="project-agent-error"><CircleAlert size={15} /> {t('projects.openDesktopError')}</p>}
+        {launchMutation.isSuccess && <p className="project-agent-success">{t('projects.launchSucceeded')}</p>}
+        <Link className="button button--secondary project-launch-card__action" to="/settings"><TerminalSquare size={16} /> {t('projects.configureLaunch')}</Link>
       </Card>
     </div>
   );

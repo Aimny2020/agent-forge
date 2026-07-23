@@ -38,9 +38,9 @@ pub async fn add_project(
 }
 
 #[tauri::command]
-pub async fn select_directory() -> Result<Option<String>, CommandError> {
+pub async fn select_directory(title: String) -> Result<Option<String>, CommandError> {
     let result = rfd::AsyncFileDialog::new()
-        .set_title("选择项目根目录")
+        .set_title(&title)
         .pick_folder()
         .await;
 
